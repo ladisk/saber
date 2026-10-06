@@ -56,3 +56,34 @@ extension PathScaleExtensions on Path {
     return transform(matrix);
   }
 }
+
+/// Mirrors across the line perpendicular to [axis] at [about]:
+/// [Axis.horizontal] flips left and right about the line `x = about`,
+/// [Axis.vertical] flips top and bottom about the line `y = about`.
+extension OffsetMirrorExtensions on Offset {
+  Offset mirrorAbout(Axis axis, double about) => switch (axis) {
+    .horizontal => Offset(2 * about - dx, dy),
+    .vertical => Offset(dx, 2 * about - dy),
+  };
+}
+
+extension RectMirrorExtensions on Rect {
+  Rect mirrorAbout(Axis axis, double about) => .fromPoints(
+    topLeft.mirrorAbout(axis, about),
+    bottomRight.mirrorAbout(axis, about),
+  );
+}
+
+extension PathMirrorExtensions on Path {
+  Path mirrorAbout(Axis axis, double about) {
+    final horizontal = axis == .horizontal;
+    final matrix = Float64List(16)
+      ..[0] = horizontal ? -1 : 1
+      ..[5] = horizontal ? 1 : -1
+      ..[10] = 1
+      ..[12] = horizontal ? 2 * about : 0
+      ..[13] = horizontal ? 0 : 2 * about
+      ..[15] = 1;
+    return transform(matrix);
+  }
+}

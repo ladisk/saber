@@ -77,6 +77,17 @@ class Stroke {
     _highQualityPath = _highQualityPath?.scaleAbout(factor, anchor);
   }
 
+  /// Mirrors the stroke across the line perpendicular to [axis] at [about].
+  /// See [OffsetMirrorExtensions.mirrorAbout].
+  void mirror(Axis axis, double about) {
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
+      final mirrored = point.mirrorAbout(axis, about);
+      points[i] = PointVector(mirrored.dx, mirrored.dy, point.pressure);
+    }
+    markPolygonNeedsUpdating();
+  }
+
   /// The line through the stroke's points, ignoring its thickness.
   /// Used to draw strokes that aren't [LineType.solid].
   Path get centerlinePath => Path()..addPolygon(points, false);

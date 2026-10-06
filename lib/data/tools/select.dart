@@ -176,6 +176,34 @@ class Select extends Tool {
     }
   }
 
+  /// Mirrors the selection across its centre line
+  /// and returns where that line is.
+  ///
+  /// Images move to their mirrored place but aren't flipped themselves.
+  double mirror(Axis axis) {
+    final center = selectResult.path.getBounds().center;
+    final about = axis == .horizontal ? center.dx : center.dy;
+    mirrorItems(selectResult.strokes, selectResult.images, axis, about);
+    selectResult.path = selectResult.path.mirrorAbout(axis, about);
+    return about;
+  }
+
+  /// Mirrors [strokes] and [images] across the line
+  /// perpendicular to [axis] at [about].
+  static void mirrorItems(
+    List<Stroke> strokes,
+    List<EditorImage> images,
+    Axis axis,
+    double about,
+  ) {
+    for (final stroke in strokes) {
+      stroke.mirror(axis, about);
+    }
+    for (final image in images) {
+      image.dstRect = image.dstRect.mirrorAbout(axis, about);
+    }
+  }
+
   void onDragStart(Offset position, int pageIndex) {
     doneSelecting = false;
     selectResult = SelectResult(

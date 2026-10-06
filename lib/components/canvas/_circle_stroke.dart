@@ -135,6 +135,12 @@ class CircleStroke extends Stroke {
   }
 
   @override
+  void mirror(Axis axis, double about) {
+    center = center.mirrorAbout(axis, about);
+    super.mirror(axis, about);
+  }
+
+  @override
   @Deprecated('We already know the shape is a circle.')
   RecognizedUnistroke detectShape() {
     return RecognizedUnistroke(

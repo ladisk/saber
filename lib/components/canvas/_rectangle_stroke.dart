@@ -140,6 +140,12 @@ class RectangleStroke extends Stroke {
   }
 
   @override
+  void mirror(Axis axis, double about) {
+    rect = rect.mirrorAbout(axis, about);
+    super.mirror(axis, about);
+  }
+
+  @override
   void scale(double factor, Offset anchor) {
     rect = rect.scaleAbout(factor, anchor);
     super.scale(factor, anchor);

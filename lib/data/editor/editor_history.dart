@@ -146,6 +146,7 @@ class EditorHistoryItem {
     required this.images,
     this.offset,
     this.resize,
+    this.mirror,
     this.page,
     this.quillChange,
     this.colorChange,
@@ -157,6 +158,10 @@ class EditorHistoryItem {
        assert(
          type != .resize || resize != null,
          'Resize must be provided for resize',
+       ),
+       assert(
+         type != .mirror || mirror != null,
+         'Mirror must be provided for mirror',
        ),
        assert(
          type != .deletePage || page != null,
@@ -191,6 +196,9 @@ class EditorHistoryItem {
 
   /// The scale factor of a resize, and the point it was scaled about.
   final ({double factor, Offset anchor})? resize;
+
+  /// The axis of a mirror, and where its mirror line is.
+  final ({Axis axis, double about})? mirror;
   final EditorPage? page;
   final DocChange? quillChange;
   final Map<Stroke, Change<Color>>? colorChange;
@@ -203,6 +211,7 @@ class EditorHistoryItem {
     List<EditorImage>? images,
     Rect? offset,
     ({double factor, Offset anchor})? resize,
+    ({Axis axis, double about})? mirror,
     EditorPage? page,
     DocChange? quillChange,
     Map<Stroke, Change<Color>>? colorChange,
@@ -215,6 +224,7 @@ class EditorHistoryItem {
       images: images ?? this.images,
       offset: offset ?? this.offset,
       resize: resize ?? this.resize,
+      mirror: mirror ?? this.mirror,
       page: page ?? this.page,
       quillChange: quillChange ?? this.quillChange,
       colorChange: colorChange ?? this.colorChange,
@@ -231,6 +241,7 @@ enum EditorHistoryItemType {
   insertPage,
   move,
   resize,
+  mirror,
   quillChange,
   quillUndoneChange,
   changeColor,

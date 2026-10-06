@@ -432,6 +432,18 @@ class EditorState extends State<Editor> {
             );
           }
 
+        case .mirror:
+          // mirroring again undoes it
+          final (:axis, :about) = item.mirror!;
+          Select.mirrorItems(item.strokes, item.images, axis, about);
+          final select = Select.currentSelect;
+          if (select.doneSelecting) {
+            select.selectResult.path = select.selectResult.path.mirrorAbout(
+              axis,
+              about,
+            );
+          }
+
         case .quillChange:
           final quill = coreInfo.pages[item.pageIndex].quill;
           quill.controller.undo();
@@ -449,7 +461,7 @@ class EditorState extends State<Editor> {
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
       }
 
-      if (item.type != .move && item.type != .resize) {
+      if (item.type != .move && item.type != .resize && item.type != .mirror) {
         Select.currentSelect.unselect();
       }
     });
@@ -490,6 +502,8 @@ class EditorState extends State<Editor> {
             ),
           ),
         );
+      case .mirror:
+        undo(item);
       case .quillChange:
         undo(item.copyWith(type: .quillUndoneChange));
       case .quillUndoneChange: // this will never happen
@@ -1527,6 +1541,24 @@ class EditorState extends State<Editor> {
                   pageIndex: select.selectResult.pageIndex,
                   strokes: duplicatedStrokes,
                   images: duplicatedImages,
+                ),
+              );
+              autosaveAfterDelay();
+            });
+          },
+          mirrorSelection: (axis) {
+            final select = currentTool as Select;
+            if (!select.doneSelecting) return;
+
+            setState(() {
+              final about = select.mirror(axis);
+              history.recordChange(
+                EditorHistoryItem(
+                  type: .mirror,
+                  pageIndex: select.selectResult.pageIndex,
+                  strokes: select.selectResult.strokes,
+                  images: select.selectResult.images,
+                  mirror: (axis: axis, about: about),
                 ),
               );
               autosaveAfterDelay();

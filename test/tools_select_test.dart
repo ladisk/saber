@@ -124,6 +124,59 @@ void main() {
       );
     });
 
+    group('mirror', () {
+      late Stroke stroke;
+      late TestImage image;
+
+      setUp(() {
+        final select = Select.currentSelect;
+        stroke = Stroke(
+          color: Stroke.defaultColor,
+          pressureEnabled: Stroke.defaultPressureEnabled,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(100, 100)),
+          toolId: .fountainPen,
+        )..addPoints(const [Offset(15, 20), Offset(30, 30)]);
+        image = TestImage(dstRect: const .fromLTWH(12, 20, 10, 10));
+
+        // Drag gesture in a 40x40 square shape, centred on (30, 30)
+        select.onDragStart(const Offset(10, 10), 0);
+        select.onDragUpdate(const Offset(10, 50));
+        select.onDragUpdate(const Offset(50, 50));
+        select.onDragUpdate(const Offset(50, 10));
+        select.onDragEnd([stroke], [image]);
+      });
+
+      test('mirrors horizontally about the centre', () {
+        expect(Select.currentSelect.mirror(.horizontal), 30);
+        final bounds = stroke.centerlinePath.getBounds();
+        expect(bounds, const Rect.fromLTRB(30, 20, 45, 30));
+        expect(image.dstRect, const Rect.fromLTRB(38, 20, 48, 30));
+      });
+
+      test('mirrors vertically about the centre', () {
+        expect(Select.currentSelect.mirror(.vertical), 30);
+        final bounds = stroke.centerlinePath.getBounds();
+        expect(bounds, const Rect.fromLTRB(15, 30, 30, 40));
+        expect(image.dstRect, const Rect.fromLTRB(12, 30, 22, 40));
+      });
+
+      test('mirroring twice restores the selection', () {
+        final select = Select.currentSelect;
+        final path = select.selectResult.path.getBounds();
+        select
+          ..mirror(.horizontal)
+          ..mirror(.horizontal);
+        expect(
+          stroke.centerlinePath.getBounds(),
+          const Rect.fromLTRB(15, 20, 30, 30),
+        );
+        expect(image.dstRect, const Rect.fromLTWH(12, 20, 10, 10));
+        expect(select.selectResult.path.getBounds(), path);
+      });
+    });
+
     group('resize', () {
       late Stroke stroke;
       late TestImage image;

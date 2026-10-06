@@ -51,6 +51,7 @@ class Toolbar extends StatefulWidget {
     required this.paste,
     required this.duplicateSelection,
     required this.deleteSelection,
+    required this.mirrorSelection,
     required this.exportAsSba,
     required this.exportAsPdf,
     required this.exportAsPng,
@@ -79,6 +80,7 @@ class Toolbar extends StatefulWidget {
 
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
+  final ValueChanged<Axis> mirrorSelection;
 
   final Future Function(BuildContext)? exportAsSba;
   final Future Function(BuildContext)? exportAsPdf;
@@ -251,6 +253,7 @@ class _ToolbarState extends State<Toolbar> {
               .select => SelectionBar(
                 duplicateSelection: widget.duplicateSelection,
                 deleteSelection: widget.deleteSelection,
+                mirrorSelection: widget.mirrorSelection,
               ),
             },
           );

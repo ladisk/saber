@@ -9,7 +9,7 @@
 > - Please do not report problems with this fork to the official Saber project.
 >
 > **Changes in this fork:**
-> - Resize a lasso selection by dragging its corner handles.
+> - Resize a lasso selection by dragging its corner handles, or mirror it horizontally or vertically.
 > - Two-finger tap to undo, three-finger tap to redo.
 > - Apple Pencil double tap switches between the pen and the eraser.
 > - A Shapes tool in the toolbar: drag to draw a straight line, rectangle, circle or sine wave (½ to 4 periods).
