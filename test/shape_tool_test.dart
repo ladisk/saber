@@ -77,6 +77,18 @@ void main() {
         ..sinePeriods = 0.5
         ..startAt(const Offset(10, 20), page, 0)
         ..onDragUpdate(const Offset(110, 80), null);
+      // dragged down, so the hump goes down
+      final bounds = tool.onDragEnd()!.centerlinePath.getBounds();
+      expect(bounds.top, closeTo(50, 0.1));
+      expect(bounds.bottom, closeTo(80, 0.1));
+    });
+
+    test('dragging upwards flips the sine wave', () {
+      tool
+        ..kind = .sine
+        ..sinePeriods = 0.5
+        ..startAt(const Offset(10, 80), page, 0)
+        ..onDragUpdate(const Offset(110, 20), null);
       final bounds = tool.onDragEnd()!.centerlinePath.getBounds();
       expect(bounds.top, closeTo(20, 0.1));
       expect(bounds.bottom, closeTo(50, 0.1));

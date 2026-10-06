@@ -171,16 +171,18 @@ class ShapeTool extends Pen {
   /// [sinePeriods] of a sine wave from the left of the drag's rectangle
   /// to the right, centred vertically, touching its top and bottom.
   ///
-  /// It runs from [_start] to [_end], so dragging leftwards mirrors it.
+  /// It runs from [_start] to [_end], and its first hump goes the way
+  /// the drag went vertically, so dragging leftwards or upwards mirrors it.
   List<Offset> _sinePoints() {
     final numPoints = (sinePeriods * _sinePointsPerPeriod).ceil();
     final middle = (_start.dy + _end.dy) / 2;
-    final amplitude = (_end.dy - _start.dy).abs() / 2;
+    // signed, so the first hump follows the drag
+    final amplitude = (_end.dy - _start.dy) / 2;
     return [
       for (var i = 0; i <= numPoints; i++)
         Offset(
           _start.dx + (_end.dx - _start.dx) * i / numPoints,
-          middle - amplitude * sin(2 * pi * sinePeriods * i / numPoints),
+          middle + amplitude * sin(2 * pi * sinePeriods * i / numPoints),
         ),
     ];
   }
