@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
@@ -16,7 +18,8 @@ import 'package:sbn/has_size.dart';
 enum ShapeKind {
   line('Line', Symbols.diagonal_line),
   rectangle('Rectangle', Symbols.crop_square),
-  circle('Circle', Symbols.circle);
+  circle('Circle', Symbols.circle),
+  sine('Sine wave', Symbols.airwave);
 
   new(this.label, this.icon);
 
@@ -28,7 +31,8 @@ enum ShapeKind {
 ///
 /// A line goes from the start point to the pointer,
 /// a rectangle has those two points as opposite corners,
-/// and a circle is centred on the start point.
+/// a circle is centred on the start point,
+/// and a sine wave fills the rectangle between them with [sinePeriods].
 ///
 /// Unlike [ShapePen], nothing is recognised from freehand drawing.
 /// Strokes are saved as shape pen strokes,
@@ -54,8 +58,13 @@ class ShapeTool extends Pen {
   /// Drags shorter than this, in page pixels, don't draw anything.
   static const minDragLength = 2.0;
 
+  /// The choices for [sinePeriods].
+  static const sinePeriodOptions = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0];
+  static const _sinePointsPerPeriod = 48;
+
   var kind = ShapeKind.line;
   var lineType = LineType.solid;
+  var sinePeriods = 2.0;
 
   var _start = Offset.zero;
   var _end = Offset.zero;
@@ -105,6 +114,17 @@ class ShapeTool extends Pen {
         center: position,
         radius: 0,
       ),
+      .sine => Stroke(
+        color: color,
+        pressureEnabled: pressureEnabled,
+        // streamline would flatten the peaks
+        options: options.copyWith(isComplete: true, streamline: 0)
+          ..start.taperEnabled = false
+          ..end.taperEnabled = false,
+        pageIndex: pageIndex,
+        page: page,
+        toolId: toolId,
+      ),
     }..lineType = lineType;
     _reshape();
   }
@@ -134,15 +154,34 @@ class ShapeTool extends Pen {
         stroke.radius = (_end - _start).distance;
       case RectangleStroke():
         stroke.rect = .fromPoints(_start, _end);
-      case Stroke():
-        while (!stroke.isEmpty) {
-          stroke.popFirstPoint();
-        }
+      case Stroke() when kind == .sine:
         stroke
+          ..clearPoints()
+          ..addPoints(_sinePoints());
+      case Stroke():
+        stroke
+          ..clearPoints()
           ..addPoint(_start)
           ..addPoint(_end)
           ..convertToLine();
     }
     stroke.markPolygonNeedsUpdating();
+  }
+
+  /// [sinePeriods] of a sine wave from the left of the drag's rectangle
+  /// to the right, centred vertically, touching its top and bottom.
+  ///
+  /// It runs from [_start] to [_end], so dragging leftwards mirrors it.
+  List<Offset> _sinePoints() {
+    final numPoints = (sinePeriods * _sinePointsPerPeriod).ceil();
+    final middle = (_start.dy + _end.dy) / 2;
+    final amplitude = (_end.dy - _start.dy).abs() / 2;
+    return [
+      for (var i = 0; i <= numPoints; i++)
+        Offset(
+          _start.dx + (_end.dx - _start.dx) * i / numPoints,
+          middle - amplitude * sin(2 * pi * sinePeriods * i / numPoints),
+        ),
+    ];
   }
 }

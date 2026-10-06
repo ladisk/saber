@@ -57,6 +57,31 @@ void main() {
       expect(stroke.pageIndex, 2);
     });
 
+    test('draws a sine wave that fills the dragged rectangle', () {
+      tool
+        ..kind = .sine
+        ..startAt(const Offset(10, 20), page, 0)
+        ..onDragUpdate(const Offset(110, 80), null);
+      final stroke = tool.onDragEnd()!;
+      expect(stroke.length, 2 * 48 + 1);
+      final bounds = stroke.centerlinePath.getBounds();
+      expect(bounds.left, closeTo(10, 0.01));
+      expect(bounds.right, closeTo(110, 0.01));
+      expect(bounds.top, closeTo(20, 0.1));
+      expect(bounds.bottom, closeTo(80, 0.1));
+    });
+
+    test('draws half a sine period as a single hump', () {
+      tool
+        ..kind = .sine
+        ..sinePeriods = 0.5
+        ..startAt(const Offset(10, 20), page, 0)
+        ..onDragUpdate(const Offset(110, 80), null);
+      final bounds = tool.onDragEnd()!.centerlinePath.getBounds();
+      expect(bounds.top, closeTo(20, 0.1));
+      expect(bounds.bottom, closeTo(50, 0.1));
+    });
+
     test('reshapes one preview stroke while dragging', () {
       tool
         ..kind = .line

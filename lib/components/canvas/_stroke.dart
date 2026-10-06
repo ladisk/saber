@@ -212,6 +212,11 @@ class Stroke {
     }
   }
 
+  void clearPoints() {
+    points.clear();
+    markPolygonNeedsUpdating();
+  }
+
   void popFirstPoint() {
     points.removeAt(0);
     markPolygonNeedsUpdating();
