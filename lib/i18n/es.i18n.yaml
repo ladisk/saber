@@ -51,10 +51,10 @@ home:
     numberRenamedTo: $n notas serán renombradas para evitar conflictos
   deleteNote: Eliminar nota
   deleteNoteDialog:
+    deleteNotes: Eliminar $n notas
     confirmDelete:
       other: ¿Desea eliminar la nota seleccionada de forma permanente?
     delete: Eliminar
-    deleteNotes(OUTDATED): Eliminar $n notas
     deleteName(OUTDATED): Borrar $f
   renameFolder:
     renameFolder: Renombrar carpeta

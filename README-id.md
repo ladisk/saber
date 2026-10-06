@@ -1,27 +1,27 @@
 # <img src="https://github.com/saber-notes/saber/raw/main/assets/icon/icon.png" width="30" height="30" alt="Logo"> Saber
 
 [<img src='https://github.com/saber-notes/saber/blob/main/assets_raw/badges/google-play-badge.svg'
-    alt='在 Google Play 上取得'
+    alt='Dapatkan di Google Play'
     height=50>][google_play]
 &nbsp;
 [<img src="https://github.com/saber-notes/saber/blob/main/assets_raw/badges/f-droid-badge.svg"
-    alt="在 F-Droid 上取得"
+    alt="Dapatkan di F-Droid"
     height=50>][f-droid]
 &nbsp;
 [<img src="https://github.com/saber-notes/saber/blob/main/assets_raw/badges/app-store-badge.svg"
-    alt="在 App Store 下載"
+    alt="Unduh di App Store"
     height=50>][app_store]
 &nbsp;
 [<img src="https://github.com/saber-notes/saber/blob/main/assets_raw/badges/windows-badge.png"
-    alt="下載 Windows 版"
+    alt="Unduh untuk Windows"
     height=50>][download_windows]
 &nbsp;
 [<img src="https://github.com/saber-notes/saber/blob/main/assets_raw/badges/flathub-badge.svg"
-    alt="在 Flathub 上下載"
+    alt="Unduh di Flathub"
     height=50>][flathub]
 &nbsp;
 [<img src="https://github.com/saber-notes/saber/blob/main/assets_raw/badges/appimage-logo.svg"
-    alt="取得 AppImage"
+    alt="Dapatkan sebagai AppImage"
     height=50>][download_appimage]
 
 [English](https://github.com/saber-notes/saber/blob/main/README.md) |
@@ -33,21 +33,23 @@
 [Tiếng Việt](https://github.com/saber-notes/saber/blob/main/README-vi.md) |
 [Bahasa Indonesia](https://github.com/saber-notes/saber/blob/main/README-id.md)
 
-Saber是一個專為手寫而生的筆記應用程式。
+Saber merupakan aplikasi catatan yang dirancang khusus untuk tulisan tangan.
 
-它被設計得盡可能簡單和直觀，同時仍提供您實際會使用的獨特功能。此外，Saber可以在您所有的設備上使用，無論大小，並在它們之間無縫同步。
+Aplikasi ini dibuat sesederhana dan seintuitif mungkin, namun tetap menghadirkan fitur-fitur unik yang akan kamu pakai. Saber juga dapat digunakan di semua perangkatmu, dari yang besar sampai kecil, dan sinkronisasinya berjalan mulus di antara semuanya.
 
-值得注意的是，當您處於深色模式時，它可以反轉您的筆記。這使您可以在黑色背景上用白色墨水書寫，這在低光源環境下，例如老師在課堂上關燈時，對眼睛更加友好。圖片和PDF文件也會反轉，因此您仍然可以使用數位教科書而無需煩惱。
+Salah satu keunggulannya yaitu Saber dapat membalik warna catatanmu saat mode gelap aktif. Jadi kamu dapat menulis dengan tinta putih di atas latar hitam, yang jauh lebih nyaman di mata saat berada di tempat minim cahaya, misalnya ketika lampu kelas dimatikan guru.
+Gambar dan PDF pun ikut dibalik warnanya, sehingga kamu tetap dapat memakai cetakan digital atau buku teks tanpa ribet.
 
-Saber使用雙密碼系統來保護您的筆記，使其只能被您存取，即使有人對伺服器擁有完全控制權也是如此。您可以安全地將筆記存儲在官方的Saber伺服器上，或者是其他伺服器，甚至是自己搭建！
+Saber menerapkan sistem dua kata sandi untuk melindungi catatanmu dari siapa pun, bahkan dari pihak yang memiliki kendali penuh atas server sekalipun. Kamu dapat menyimpan catatan dengan aman di server resmi Saber, server lain, atau bahkan meng-host servermu sendiri!
 
-本應用程式是完全開源的，任何人都可以查看原始碼，了解它的具體運作方式以及如何處理您的資料。許多其他筆記應用程式是閉源和專有的，這意味著它們的內部運作對公眾來說是一個謎。
+Aplikasi ini sepenuhnya open-source, sehingga siapa saja dapat melihat kode sumbernya dan mengetahui persis apa yang dilakukan aplikasi ini serta bagaimana data kamu diperlakukan. Banyak aplikasi pencatat lain yang closed-source dan proprietary, artinya cara kerjanya di balik layar tetap menjadi misteri bagi publik.
 
-作為一名數學生，我在其他應用中經常遇到的問題之一是，使用其他應用時，突出顯示多行方程總是很麻煩，因為突出顯示在重疊時會改變顏色。我遇到的另一個問題是，在某些應用程式中，突出顯示會在文字上方渲染，將其淡化，使其難以閱讀。Saber的突出顯示沒有這些問題。它使用的畫布合成技術以一種優於傳統紙張相一致的方式呈現突出顯示，在處理重疊時保持顏色一致。
+Sebagai seorang yang belajar matematika, menyorot (highlight) persamaan yang panjangnya berbaris-baris selalu menjadi masalah tersendiri di aplikasi lain, karena warna stabilo sering berubah begitu tumpang tindih dengan dirinya sendiri. Masalah lain yang saya alami sepertinya, di beberapa aplikasi stabilonya malah tampil di atas teks, membuat tulisan menjadi pudar dan sulit untuk dibaca.
+Stabilo di Saber tidak memiliki masalah seperti itu. Fitur ini memanfaatkan canvas compositing untuk menampilkan hasil stabilo secara konsisten, bahkan lebih baik dibanding kertas biasa, karena dapat menangani tumpang tindih warna dengan rapi dan tetap konsisten.
 
-Saber具有使筆記井井有條所需的一切功能。在無限嵌套的資料夾中創建資料夾，盡情發揮您的創意，而且對於嵌套資料夾的數量沒有限制。即使筆記可能深藏在嵌套的資料夾中，您仍然可以輕鬆存取，因為最近的筆記始終顯示在主螢幕上。
+Saber memiliki semua yang kamu butuhkan untuk menjaga catatanmu agar tetap rapi. Kamu dapat membuat folder di dalam folder dan di dalam folder lagi sesuka hati, tanpa batasan jumlah folder bersarang. Dan meskipun sebuah catatan terkubur jauh di dalam folder yang berlapis-lapis, kamu tetap dapat mengaksesnya dengan mudah karena catatan terbarumu selalu tersedia di layar utama.
 
-透過Saber，發現一種全新的捕捉和組織思緒的方式。無論您是學生、專業人士還是具有創造力的思維者，Saber都是您在數位手寫中信賴的伙伴。立即下載，讓您的思想自由流暢！
+Temukan cara baru untuk menangkap dan mengatur pikiranmu bersama Saber. Baik kamu seorang pelajar, profesional, maupun berjiwa kreatif, Saber merupakan teman andalan untuk tulisan tangan digital. Unduh sekarang dan biarkan ide-idemu mengalir!
 
 [![Latest release](https://img.shields.io/github/v/release/saber-notes/saber)](https://github.com/saber-notes/saber/releases/latest)
 [![Flathub](https://img.shields.io/flathub/v/com.adilhanney.saber)](https://flathub.org/apps/details/com.adilhanney.saber)
@@ -60,7 +62,7 @@ Saber具有使筆記井井有條所需的一切功能。在無限嵌套的資料
 [![Codecov](https://codecov.io/gh/saber-notes/saber/branch/main/graph/badge.svg?token=EGQSN0THW2)](https://codecov.io/gh/saber-notes/saber)
 
 <details open>
-<summary>點擊即可顯示/隱藏螢幕截圖</summary>
+<summary>Tekan untuk menampilkan/menyembunyikan tangkapan layar</summary>
 
 <div>
 <img src="https://github.com/saber-notes/saber/raw/main/metadata/en-US/images/phoneScreenshots/1_home.png" width="180">
@@ -70,53 +72,54 @@ Saber具有使筆記井井有條所需的一切功能。在無限嵌套的資料
 </div>
 </details>
 
-## 特色
+## Fitur
 
-請參閱
-[#1 Saber progress][progress]。
+Silakan lihat di [#1 Perkembangan Saber][progress].
 
-## 安裝
+## Instalasi
 
-請參閱
-[Install Saber](https://github.com/saber-notes/saber/wiki/install)
-在維基上。
+Silakan lihat di halaman
+[Instal Saber](https://github.com/saber-notes/saber/wiki/install)
+di wiki.
 
-## 從原始碼構建
+## Build dari kode sumber
 
-請參閱
+Silakan lihat di halaman
 [Build Saber](https://github.com/saber-notes/saber/wiki/build)
-在維基上。
+di wiki.
 
-## 連結
+## Tautan
 
-- [Nextcloud server][nextcloud]
-- [Privacy policy][privacy]
-- [License][license]
-- [Releases][releases]
+- [Server Nextcloud][nextcloud]
+- [Kebijakan privasi][privacy]
+- [Lisensi][license]
+- [Rilis][releases]
 
-## 翻譯
+## Menerjemahkan
 
-所有翻譯均由我們的社區貢獻者完成。
+Semua terjemahan ini berkat komunitas kontributor kami.
 
-如果您想參與 Saber 的翻譯，請造訪 [Weblate](https://hosted.weblate.org/engage/saber-notes/)！
+Kalau kamu ingin membantu menerjemahkan Saber, langsung saja ke [Weblate](https://hosted.weblate.org/engage/saber-notes/)!
 
-[![翻譯狀態](https://hosted.weblate.org/widget/saber-notes/multi-auto.svg)](https://hosted.weblate.org/engage/saber-notes/)
+[![Translation status](https://hosted.weblate.org/widget/saber-notes/multi-auto.svg)](https://hosted.weblate.org/engage/saber-notes/)
 
-## 支持Saber
+Catatan: Agar tidak jatuh kembali ke bahasa Inggris, bagian terjemahan yang belum lengkap
+akan diisi sementara dengan terjemahan mesin sampai ada kontributor manusia yang melengkapinya.
 
-如果您喜歡 Saber，請考慮通過以下方式支持它：
+## Mendukung Saber
 
-- 傳播這個詞！
-- 在 GitHub 上為該倉庫加星標
-- 在 [GitHub Sponsors](https://github.com/sponsors/adil192) 上贊助
-- 通過 [PayPal](https://paypal.me/adilhanney) 贊助
-- 在 Nextcloud 伺服器上購買更多存儲空間，請參閱[定價](pricing.md)
+Jika kamu menyukai Saber, kamu dapat mendukungnya dengan berbagai cara berikut ini:
+- Membagikan ke orang lain!
+- Memberi bintang pada proyek ini di GitHub
+- Menjadi sponsor saya di [GitHub Sponsors](https://github.com/sponsors/adil192)
+- Berdonasi lewat [PayPal](https://paypal.me/adilhanney)
+- Membeli tambahan penyimpanan di server Nextcloud: lihat [Harga](pricing.md)
 
-## 開發筆記
+## Catatan pengembangan
 
-請參閱
-[Maintainer notes](https://github.com/saber-notes/saber/wiki/Maintainer-notes)
-在維基上。
+Silakan lihat halaman
+[Catatan maintainer](https://github.com/saber-notes/saber/wiki/Maintainer-notes)
+di wiki.
 
 
 [f-droid]: https://f-droid.org/packages/com.adilhanney.saber/
@@ -126,9 +129,12 @@ Saber具有使筆記井井有條所需的一切功能。在無限嵌套的資料
 [app_store]: https://apps.apple.com/us/app/saber/id1671523739
 [download_windows]: https://github.com/saber-notes/saber/releases/download/v1.36.1/SaberInstaller_v1.36.1.exe
 [download_appimage]: https://github.com/saber-notes/saber/releases/download/v1.36.1/Saber-1.36.1-x86_64.AppImage
+
 [nextcloud]: https://nc.saber.adil.hanney.org/
+
 [privacy]: https://github.com/saber-notes/saber/blob/main/privacy_policy.md
 [license]: https://github.com/saber-notes/saber/blob/main/LICENSE.md
+
 [releases]: https://github.com/saber-notes/saber/releases
 [issues]: https://github.com/saber-notes/saber/issues
 [progress]: https://github.com/saber-notes/saber/discussions/1
