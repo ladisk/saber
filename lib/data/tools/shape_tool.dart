@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/pen.dart';
@@ -54,6 +55,7 @@ class ShapeTool extends Pen {
   static const minDragLength = 2.0;
 
   var kind = ShapeKind.line;
+  var lineType = LineType.solid;
 
   var _start = Offset.zero;
   var _end = Offset.zero;
@@ -103,7 +105,7 @@ class ShapeTool extends Pen {
         center: position,
         radius: 0,
       ),
-    };
+    }..lineType = lineType;
     _reshape();
   }
 

@@ -57,7 +57,7 @@ class RectangleStroke extends Stroke {
         json['rw'] ?? 0,
         json['rh'] ?? 0,
       ),
-    );
+    )..lineType = .fromJson(json['lt']);
   }
   @override
   Map<String, dynamic> toJson() {
@@ -70,6 +70,7 @@ class RectangleStroke extends Stroke {
       'rh': rect.height,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (lineType != .solid) 'lt': lineType.name,
     }..addAll(options.toJson());
   }
 
@@ -168,5 +169,5 @@ class RectangleStroke extends Stroke {
     page: page,
     toolId: toolId,
     rect: rect,
-  );
+  )..lineType = lineType;
 }

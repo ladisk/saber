@@ -8,6 +8,7 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/tools/highlighter.dart';
@@ -139,26 +140,41 @@ class CanvasPainter extends CustomPainter {
     }
   }
 
-  /// Draws [stroke] as an outline if it is a [CircleStroke]
-  /// or [RectangleStroke], and returns whether it was drawn.
+  /// Draws [stroke] as an outline if it is a [CircleStroke],
+  /// a [RectangleStroke], or not [LineType.solid],
+  /// and returns whether it was drawn.
   bool _drawShapeStroke(Canvas canvas, Stroke stroke, Color color) {
-    late final shapePaint = Paint()
-      ..color = color
-      ..style = .stroke
-      ..strokeWidth = stroke.options.size;
-
+    final strokeSize = stroke.options.size;
+    final Path path;
     if (stroke is CircleStroke) {
-      canvas.drawCircle(stroke.center, stroke.radius, shapePaint);
-      return true;
+      path = Path()
+        ..addOval(.fromCircle(center: stroke.center, radius: stroke.radius));
     } else if (stroke is RectangleStroke) {
-      final strokeSize = stroke.options.size;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(stroke.rect, Radius.circular(strokeSize / 4)),
-        shapePaint,
-      );
-      return true;
+      path = Path()
+        ..addRRect(.fromRectAndRadius(stroke.rect, .circular(strokeSize / 4)));
+    } else if (stroke.lineType != .solid && stroke.length >= 2) {
+      path = stroke.centerlinePath;
+    } else {
+      return false;
     }
-    return false;
+
+    final lineType = stroke.lineType;
+    canvas.drawPath(
+      switch (lineType) {
+        .solid => path,
+        _ => dashPath(
+          path,
+          dashArray: CircularIntervalList(lineType.intervals(strokeSize)),
+        ),
+      },
+      Paint()
+        ..color = color
+        ..style = .stroke
+        ..strokeWidth = strokeSize
+        ..strokeCap = lineType.cap
+        ..strokeJoin = .round,
+    );
+    return true;
   }
 
   void _drawCurrentStroke(Canvas canvas) {

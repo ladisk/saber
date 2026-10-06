@@ -117,6 +117,20 @@ abstract class EditorExporter {
                         strokeSize / 4,
                         strokeSize / 4,
                       );
+                    } else if (stroke.lineType != .solid &&
+                        stroke.length >= 2) {
+                      shouldFillShape = false;
+                      final points = stroke.centerlinePoints;
+                      pdfGraphics.moveTo(
+                        points.first.dx,
+                        pageSize.height - points.first.dy,
+                      );
+                      for (final point in points.skip(1)) {
+                        pdfGraphics.lineTo(
+                          point.dx,
+                          pageSize.height - point.dy,
+                        );
+                      }
                     } else {
                       shouldFillShape = true;
                       pdfGraphics.drawShape(stroke.toSvgPath());
@@ -128,9 +142,22 @@ abstract class EditorExporter {
                       pdfGraphics.fillPath();
                     } else {
                       // stroke
+                      final lineType = stroke.lineType;
+                      pdfGraphics.saveContext();
                       pdfGraphics.setStrokeColor(strokeColor);
                       pdfGraphics.setLineWidth(stroke.options.size);
+                      if (lineType != .solid) {
+                        pdfGraphics.setLineDashPattern(
+                          lineType.intervals(stroke.options.size),
+                        );
+                        pdfGraphics.setLineCap(switch (lineType.cap) {
+                          .round => .round,
+                          _ => .butt,
+                        });
+                        pdfGraphics.setLineJoin(.round);
+                      }
                       pdfGraphics.strokePath();
+                      pdfGraphics.restoreContext();
                     }
                   }
                 },

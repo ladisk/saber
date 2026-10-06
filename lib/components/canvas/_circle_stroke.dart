@@ -57,7 +57,7 @@ class CircleStroke extends Stroke {
       toolId: .parsePenType(json['ty'], fallback: .shapePen),
       center: Offset(json['cx'] ?? 0, json['cy'] ?? 0),
       radius: json['r'] ?? 0,
-    );
+    )..lineType = .fromJson(json['lt']);
   }
   @override
   Map<String, dynamic> toJson() {
@@ -69,6 +69,7 @@ class CircleStroke extends Stroke {
       'r': radius,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (lineType != .solid) 'lt': lineType.name,
     }..addAll(options.toJson());
   }
 
@@ -158,5 +159,5 @@ class CircleStroke extends Stroke {
     toolId: toolId,
     center: center,
     radius: radius,
-  );
+  )..lineType = lineType;
 }

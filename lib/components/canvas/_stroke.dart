@@ -8,6 +8,7 @@ import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/point_extensions.dart';
 import 'package:sbn/has_size.dart';
@@ -33,6 +34,10 @@ class Stroke {
   Color color;
   bool pressureEnabled;
   final StrokeOptions options;
+
+  /// Saved only when not solid, so the official app
+  /// shows these strokes as solid lines.
+  LineType lineType = .solid;
 
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
@@ -71,6 +76,11 @@ class Stroke {
     _lowQualityPath = _lowQualityPath?.scaleAbout(factor, anchor);
     _highQualityPath = _highQualityPath?.scaleAbout(factor, anchor);
   }
+
+  /// The line through the stroke's points, ignoring its thickness.
+  /// Used to draw strokes that aren't [LineType.solid].
+  Path get centerlinePath => Path()..addPolygon(points, false);
+  Iterable<Offset> get centerlinePoints => points;
 
   void markPolygonNeedsUpdating() {
     _lowQualityPolygon = null;
@@ -159,13 +169,15 @@ class Stroke {
     }
 
     return Stroke(
-      color: color,
-      pressureEnabled: pressureEnabled,
-      options: options,
-      pageIndex: pageIndex,
-      page: page,
-      toolId: toolId,
-    )..points.addAll(points);
+        color: color,
+        pressureEnabled: pressureEnabled,
+        options: options,
+        pageIndex: pageIndex,
+        page: page,
+        toolId: toolId,
+      )
+      ..lineType = .fromJson(json['lt'])
+      ..points.addAll(points);
   }
   Map<String, dynamic> toJson() {
     // these json keys should not be the same as the ones in [StrokeOptions.toJson]
@@ -179,6 +191,7 @@ class Stroke {
       'ty': toolId.id,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (lineType != .solid) 'lt': lineType.name,
     }..addAll(options.toJson());
   }
 
@@ -418,14 +431,17 @@ class Stroke {
     }
   }
 
-  Stroke copy() => Stroke(
-    color: color,
-    pressureEnabled: pressureEnabled,
-    options: options.copyWith(),
-    pageIndex: pageIndex,
-    page: page,
-    toolId: toolId,
-  )..points.addAll(points);
+  Stroke copy() =>
+      Stroke(
+          color: color,
+          pressureEnabled: pressureEnabled,
+          options: options.copyWith(),
+          pageIndex: pageIndex,
+          page: page,
+          toolId: toolId,
+        )
+        ..lineType = lineType
+        ..points.addAll(points);
 }
 
 enum StrokeQuality(
