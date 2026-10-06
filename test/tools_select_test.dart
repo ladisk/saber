@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
+import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:sbn/has_size.dart';
 
@@ -122,6 +124,103 @@ void main() {
         isEmpty,
         reason: 'No strokes should be selected',
       );
+    });
+
+    group('touch mode', () {
+      const page = HasSize(Size(100, 100));
+      late Stroke line;
+      late CircleStroke circle;
+      late TestImage image;
+
+      setUp(() {
+        line = Stroke(
+          color: Stroke.defaultColor,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2, isComplete: true),
+          pageIndex: 0,
+          page: page,
+          toolId: .fountainPen,
+        )..addPoints(const [Offset(10, 20), Offset(90, 20)]);
+        circle = CircleStroke(
+          color: Stroke.defaultColor,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: page,
+          toolId: .shapePen,
+          center: const Offset(50, 60),
+          radius: 20,
+        );
+        image = TestImage(dstRect: const .fromLTWH(70, 70, 20, 20));
+      });
+
+      tearDown(() => Select.currentSelect.touchMode = false);
+
+      void tap(Offset position) {
+        Select.currentSelect
+          ..touchMode = true
+          ..onDragStart(position, 0)
+          ..touchAt(position, [line, circle], [image])
+          ..onDragEnd([line, circle], [image]);
+      }
+
+      test('selects a stroke near the tap', () {
+        tap(const Offset(50, 26));
+        final result = Select.currentSelect.selectResult;
+        expect(result.strokes, [line]);
+        expect(result.images, isEmpty);
+        expect(result.path.getBounds().contains(const Offset(10, 20)), isTrue);
+      });
+
+      test('selects a circle on its outline but not inside it', () {
+        tap(const Offset(71, 60));
+        expect(Select.currentSelect.selectResult.strokes, [circle]);
+        tap(const Offset(50, 60));
+        expect(Select.currentSelect.selectResult.isEmpty, isTrue);
+      });
+
+      test('selects an image under the tap', () {
+        tap(const Offset(85, 85));
+        final result = Select.currentSelect.selectResult;
+        expect(result.strokes, isEmpty);
+        expect(result.images, [image]);
+      });
+
+      test('selects everything touched while dragging', () {
+        final select = Select.currentSelect
+          ..touchMode = true
+          ..onDragStart(const Offset(50, 25), 0);
+        for (final position in const [
+          Offset(50, 25),
+          Offset(70, 60),
+          Offset(80, 80),
+        ]) {
+          select
+            ..onDragUpdate(position)
+            ..touchAt(position, [line, circle], [image]);
+        }
+        select.onDragEnd([line, circle], [image]);
+        expect(select.selectResult.strokes, [line, circle]);
+        expect(select.selectResult.images, [image]);
+        expect(select.touchesSelection(const Offset(30, 21)), isTrue);
+        expect(select.touchesSelection(const Offset(50, 60)), isFalse);
+      });
+
+      test('a tap selects without the drag ending', () {
+        final select = Select.currentSelect
+          ..touchMode = true
+          ..onDragStart(const Offset(50, 25), 0)
+          ..touchAt(const Offset(50, 25), [line, circle], [image]);
+        expect(select.doneSelecting, isTrue);
+        expect(select.selectResult.strokes, [line]);
+        expect(select.resizeHandles, isNotEmpty);
+      });
+
+      test('reports the common line type', () {
+        line.lineType = .dashed;
+        tap(const Offset(50, 21));
+        expect(Select.currentSelect.getCommonLineType(), LineType.dashed);
+      });
     });
 
     group('mirror', () {

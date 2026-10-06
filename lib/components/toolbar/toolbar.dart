@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/uni_icon.dart';
@@ -52,6 +53,7 @@ class Toolbar extends StatefulWidget {
     required this.duplicateSelection,
     required this.deleteSelection,
     required this.mirrorSelection,
+    required this.setSelectionLineType,
     required this.exportAsSba,
     required this.exportAsPdf,
     required this.exportAsPng,
@@ -81,6 +83,7 @@ class Toolbar extends StatefulWidget {
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
   final ValueChanged<Axis> mirrorSelection;
+  final ValueChanged<LineType> setSelectionLineType;
 
   final Future Function(BuildContext)? exportAsSba;
   final Future Function(BuildContext)? exportAsPdf;
@@ -155,6 +158,13 @@ class _ToolbarState extends State<Toolbar> {
     if (_ctrlShiftS != null) Keybinder.remove(_ctrlShiftS!);
     if (_f11 != null) Keybinder.remove(_f11!);
     if (_ctrlV != null) Keybinder.remove(_ctrlV!);
+  }
+
+  void _setSelectMode({required bool touchMode}) {
+    final select = Select.currentSelect;
+    if (select.touchMode != touchMode) select.unselect();
+    select.touchMode = touchMode;
+    widget.setTool(select);
   }
 
   void toggleEraser() {
@@ -254,6 +264,7 @@ class _ToolbarState extends State<Toolbar> {
                 duplicateSelection: widget.duplicateSelection,
                 deleteSelection: widget.deleteSelection,
                 mirrorSelection: widget.mirrorSelection,
+                setLineType: widget.setSelectionLineType,
               ),
             },
           );
@@ -442,11 +453,13 @@ class _ToolbarState extends State<Toolbar> {
               ),
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.select,
-                selected: widget.currentTool is Select,
+                selected:
+                    widget.currentTool is Select &&
+                    !Select.currentSelect.touchMode,
                 enabled: !widget.readOnly,
                 onPressed: () {
                   toolOptionsType.value = .hide;
-                  widget.setTool(Select.currentSelect);
+                  _setSelectMode(touchMode: false);
                 },
                 padding: buttonPadding,
                 child: Icon(
@@ -462,6 +475,20 @@ class _ToolbarState extends State<Toolbar> {
                         ]
                       : null,
                 ),
+              ),
+              ToolbarIconButton(
+                // English only: this fork doesn't regenerate translations.
+                tooltip: 'Select by touch',
+                selected:
+                    widget.currentTool is Select &&
+                    Select.currentSelect.touchMode,
+                enabled: !widget.readOnly,
+                onPressed: () {
+                  toolOptionsType.value = .hide;
+                  _setSelectMode(touchMode: true);
+                },
+                padding: buttonPadding,
+                child: const Icon(Symbols.arrow_selector_tool),
               ),
               ToolbarIconButton(
                 tooltip: t.editor.pens.laserPointer,

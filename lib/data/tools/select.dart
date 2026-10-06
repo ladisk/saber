@@ -1,9 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:saber/components/canvas/_circle_stroke.dart';
+import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:sbn/tool_id.dart';
@@ -17,6 +20,22 @@ class Select extends Tool {
   /// The minimum ratio of points inside a stroke or image
   /// for it to be selected.
   static const minPercentInside = 0.7;
+
+  /// Whether to select by touching elements, like an eraser,
+  /// instead of drawing a lasso around them.
+  var touchMode = false;
+
+  /// Whether a [touchMode] drag is picking elements.
+  ///
+  /// The selection is usable while picking, because a tap
+  /// only starts a drag: it never ends it.
+  var isPicking = false;
+
+  /// How far from a stroke's edge, in page pixels, a touch still hits it.
+  static const touchTolerance = 10.0;
+
+  /// The gap between touched elements and the selection outline.
+  static const _touchSelectionPadding = 8.0;
 
   var selectResult = SelectResult(
     pageIndex: -1,
@@ -52,6 +71,13 @@ class Select extends Tool {
     return colorDistribution.entries.reduce((a, b) {
       return a.value > b.value ? a : b;
     }).key;
+  }
+
+  /// The line type of the selected strokes, if they all share one.
+  LineType? getCommonLineType() {
+    if (!doneSelecting) return null;
+    final lineTypes = selectResult.strokes.map((s) => s.lineType).toSet();
+    return lineTypes.length == 1 ? lineTypes.single : null;
   }
 
   /// The radius of a resize handle, in screen pixels.
@@ -206,6 +232,7 @@ class Select extends Tool {
 
   void onDragStart(Offset position, int pageIndex) {
     doneSelecting = false;
+    isPicking = touchMode;
     selectResult = SelectResult(
       pageIndex: pageIndex,
       strokes: [],
@@ -217,6 +244,7 @@ class Select extends Tool {
   }
 
   void onDragUpdate(Offset position) {
+    if (touchMode) return;
     selectResult.path.lineTo(position.dx, position.dy);
   }
 
@@ -225,6 +253,11 @@ class Select extends Tool {
   void onDragEnd(List<Stroke> strokes, List<EditorImage> images) {
     selectResult.path.close();
     doneSelecting = true;
+
+    if (touchMode) {
+      isPicking = false;
+      return _finishTouch();
+    }
 
     for (int i = 0; i < strokes.length; i++) {
       final stroke = strokes[i];
@@ -244,6 +277,83 @@ class Select extends Tool {
         selectResult.images.add(image);
       }
     }
+  }
+
+  /// Adds any [strokes] or [images] under [position] to the selection,
+  /// like an eraser picks strokes to erase.
+  /// Used in [touchMode] while dragging.
+  void touchAt(
+    Offset position,
+    List<Stroke> strokes,
+    List<EditorImage> images,
+  ) {
+    for (final stroke in strokes) {
+      if (selectResult.strokes.contains(stroke)) continue;
+      if (strokeHit(stroke, position)) selectResult.strokes.add(stroke);
+    }
+    // only pick images when tapping or dragging directly over them
+    for (final image in images) {
+      if (selectResult.images.contains(image)) continue;
+      if (image.dstRect.contains(position)) selectResult.images.add(image);
+    }
+    if (selectResult.isEmpty) return;
+    doneSelecting = true;
+    _finishTouch();
+  }
+
+  /// Whether [position] is on a selected stroke or image,
+  /// so a drag from there moves the selection in [touchMode].
+  bool touchesSelection(Offset position) =>
+      selectResult.strokes.any((stroke) => strokeHit(stroke, position)) ||
+      selectResult.images.any((image) => image.dstRect.contains(position));
+
+  /// Puts a rectangle around everything picked in [touchMode].
+  void _finishTouch() {
+    if (selectResult.isEmpty) return;
+    final bounds = [
+      for (final stroke in selectResult.strokes)
+        stroke.highQualityPath.getBounds(),
+      for (final image in selectResult.images) image.dstRect,
+    ].reduce((a, b) => a.expandToInclude(b));
+    selectResult.path = Path()..addRect(bounds.inflate(_touchSelectionPadding));
+  }
+
+  /// Whether a touch at [position] hits [stroke]:
+  /// on its ink or within [touchTolerance] of it.
+  /// Touches inside a circle or rectangle outline don't count.
+  @visibleForTesting
+  static bool strokeHit(Stroke stroke, Offset position) {
+    if (stroke.isEmpty) return false;
+    final polygon = stroke.highQualityPolygon;
+    if (polygon.isEmpty) return false;
+    if (!stroke.highQualityPath
+        .getBounds()
+        .inflate(touchTolerance)
+        .contains(position)) {
+      return false;
+    }
+
+    final isOutline = stroke is CircleStroke || stroke is RectangleStroke;
+    if (!isOutline && stroke.highQualityPath.contains(position)) return true;
+
+    // outlines are drawn centred on the polygon, so allow for their width
+    final tolerance =
+        touchTolerance + (isOutline ? stroke.options.size / 2 : 0);
+    for (int i = 0; i < polygon.length; i++) {
+      final a = polygon[i];
+      final b = polygon[(i + 1) % polygon.length];
+      if (_distanceToSegment(position, a, b) <= tolerance) return true;
+    }
+    return false;
+  }
+
+  static double _distanceToSegment(Offset p, Offset a, Offset b) {
+    final ab = b - a;
+    final lengthSquared = ab.distanceSquared;
+    if (lengthSquared == 0) return (p - a).distance;
+    final ap = p - a;
+    final t = ((ap.dx * ab.dx + ap.dy * ab.dy) / lengthSquared).clamp(0.0, 1.0);
+    return (p - (a + ab * t)).distance;
   }
 
   static double rectPercentInside(Path selection, Rect rect) {

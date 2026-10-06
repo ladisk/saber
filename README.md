@@ -9,11 +9,12 @@
 > - Please do not report problems with this fork to the official Saber project.
 >
 > **Changes in this fork:**
-> - Resize a lasso selection by dragging its corner handles, or mirror it horizontally or vertically.
+> - Resize a selection by dragging its corner handles, or mirror it horizontally or vertically.
+> - A Select by touch tool: tap or drag across elements to select them, like the eraser.
 > - Two-finger tap to undo, three-finger tap to redo.
 > - Apple Pencil double tap switches between the pen and the eraser.
-> - A Shapes tool in the toolbar: drag to draw a straight line, rectangle, circle or sine wave (½ to 4 periods).
-> - Line types for shapes: solid, dashed, dotted or centerline.
+> - A Shapes tool in the toolbar: drag to draw a straight line, rectangle, circle or sine wave (½ to 4 periods, flipped by the drag direction).
+> - Line types: solid, dashed, dotted or centerline, for new shapes or any selected strokes.
 >
 > **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/klemengit/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
 

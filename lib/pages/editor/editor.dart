@@ -20,6 +20,7 @@ import 'package:saber/components/canvas/canvas.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -457,6 +458,11 @@ class EditorState extends State<Editor> {
             stroke.color = item.colorChange![stroke]!.previous;
           }
 
+        case .changeLineType:
+          for (final stroke in item.strokes) {
+            stroke.lineType = item.lineTypeChange![stroke]!.previous;
+          }
+
         case .backgroundPattern:
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
       }
@@ -512,6 +518,14 @@ class EditorState extends State<Editor> {
         undo(
           item.copyWith(
             colorChange: item.colorChange!.map(
+              (key, value) => MapEntry(key, value.reverse()),
+            ),
+          ),
+        );
+      case .changeLineType:
+        undo(
+          item.copyWith(
+            lineTypeChange: item.lineTypeChange!.map(
               (key, value) => MapEntry(key, value.reverse()),
             ),
           ),
@@ -613,6 +627,7 @@ class EditorState extends State<Editor> {
       removeExcessPages();
     } else if (currentTool is Select) {
       final select = currentTool as Select;
+      select.isPicking = false;
       final onSelectedPage =
           select.doneSelecting &&
           select.selectResult.pageIndex == dragPageIndex!;
@@ -626,10 +641,15 @@ class EditorState extends State<Editor> {
         // resize selection in onDrawUpdate
         select.onResizeStart(handleIndex);
       } else if (onSelectedPage &&
-          select.selectResult.path.contains(position)) {
+          (select.touchMode
+              ? select.touchesSelection(position)
+              : select.selectResult.path.contains(position))) {
         // drag selection in onDrawUpdate
       } else {
         select.onDragStart(position, dragPageIndex!);
+        if (select.touchMode) {
+          select.touchAt(position, page.strokes, page.images);
+        }
         history.canRedo = true; // selection doesn't affect history
       }
     } else if (currentTool is LaserPointer) {
@@ -668,6 +688,8 @@ class EditorState extends State<Editor> {
       final select = currentTool as Select;
       if (select.isResizing) {
         select.onResizeUpdate(position);
+      } else if (select.isPicking) {
+        select.touchAt(position, page.strokes, page.images);
       } else if (select.doneSelecting) {
         for (final stroke in select.selectResult.strokes) {
           stroke.shift(offset);
@@ -743,6 +765,12 @@ class EditorState extends State<Editor> {
               resize: resize,
             ),
           );
+          return;
+        }
+        if (select.isPicking) {
+          shouldSave = false;
+          select.onDragEnd(page.strokes, page.images);
+          if (select.selectResult.isEmpty) select.unselect();
           return;
         }
         if (moveOffset == .zero) return;
@@ -1564,6 +1592,32 @@ class EditorState extends State<Editor> {
               autosaveAfterDelay();
             });
           },
+          setSelectionLineType: (lineType) {
+            final select = currentTool as Select;
+            if (!select.doneSelecting) return;
+            final strokes = select.selectResult.strokes;
+            if (strokes.isEmpty) return;
+
+            setState(() {
+              final lineTypeChange = <Stroke, Change<LineType>>{
+                for (final stroke in strokes)
+                  stroke: Change(previous: stroke.lineType, current: lineType),
+              };
+              for (final stroke in strokes) {
+                stroke.lineType = lineType;
+              }
+              history.recordChange(
+                EditorHistoryItem(
+                  type: .changeLineType,
+                  pageIndex: strokes.first.pageIndex,
+                  strokes: strokes,
+                  lineTypeChange: lineTypeChange,
+                  images: [],
+                ),
+              );
+              autosaveAfterDelay();
+            });
+          },
           deleteSelection: () {
             final select = currentTool as Select;
             if (!select.doneSelecting) {
@@ -1608,7 +1662,8 @@ class EditorState extends State<Editor> {
               } else if (currentTool is Select) {
                 // Changes color of selected strokes
                 final select = currentTool as Select;
-                if (select.doneSelecting) {
+                if (select.doneSelecting &&
+                    select.selectResult.strokes.isNotEmpty) {
                   final strokes = select.selectResult.strokes;
 
                   final colorChange = <Stroke, Change<Color>>{};

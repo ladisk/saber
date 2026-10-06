@@ -1,22 +1,28 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
+import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class SelectionBar extends StatelessWidget {
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
   final ValueChanged<Axis> mirrorSelection;
+  final ValueChanged<LineType> setLineType;
 
   const new({
     super.key,
     required this.duplicateSelection,
     required this.deleteSelection,
     required this.mirrorSelection,
+    required this.setLineType,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    final commonLineType = Select.currentSelect.getCommonLineType();
     return Row(
       mainAxisAlignment: .center,
       children: [
@@ -67,6 +73,22 @@ class SelectionBar extends StatelessWidget {
           tooltip: 'Mirror vertically',
           icon: const RotatedBox(quarterTurns: 1, child: Icon(Icons.flip)),
         ),
+        const SizedBox(width: 16),
+        for (final lineType in LineType.values)
+          IconButton(
+            onPressed: () => setLineType(lineType),
+            style: TextButton.styleFrom(
+              foregroundColor: lineType == commonLineType
+                  ? colorScheme.secondary
+                  : colorScheme.onSurface,
+              backgroundColor: lineType == commonLineType
+                  ? colorScheme.secondary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: lineType.label,
+            icon: Icon(lineType.icon),
+          ),
       ],
     );
   }
