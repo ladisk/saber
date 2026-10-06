@@ -4,7 +4,7 @@ name: Fork release
 # The iPad build is unsigned: SideStore signs it with your own Apple ID.
 #
 # Run it from the Actions tab, or with:
-#   gh workflow run fork-release.yml -R klemengit/saber
+#   gh workflow run fork-release.yml -R ladisk/saber
 #
 # Manual-only on purpose: pushing a tag would also start the
 # upstream release workflows, which need secrets this fork lacks.

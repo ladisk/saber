@@ -1,7 +1,6 @@
 # Saber fork on iPad
 
-This fork (`klemengit/saber`) adds resizing of the lasso selection with corner
-handles. It runs on the iPad without a paid Apple Developer account:
+This fork (`ladisk/saber`) adds the features listed in the README. It runs on the iPad without a paid Apple Developer account:
 
 1. GitHub Actions builds an **unsigned** `.ipa` (plus Linux builds) and
    publishes them as a GitHub release.
@@ -22,15 +21,15 @@ If the apps expire, they do not open until refreshed. Notes are not lost.
 
 For a change in this fork, or after merging upstream updates (below):
 
-1. Commit and push to `origin` (`klemengit/saber`).
+1. Commit and push to `origin` (`ladisk/saber`).
 2. Start the build:
 
    ```sh
-   gh workflow run fork-release.yml -R klemengit/saber
+   gh workflow run fork-release.yml -R ladisk/saber
    ```
 
    It takes about 10–15 minutes. Watch it with
-   `gh run list -R klemengit/saber --workflow fork-release.yml`.
+   `gh run list -R ladisk/saber --workflow fork-release.yml`.
    It creates a release named `v<version>-fork.<n>` (e.g. `v1.36.1-fork.2`;
    `<n>` restarts at 1 after an upstream version change) with the iPad
    `.ipa` and Linux `.AppImage` / `.tar.gz` files (x86_64 and arm64).

@@ -1,9 +1,9 @@
 # <img src="https://github.com/saber-notes/saber/raw/main/assets/icon/icon.png" width="30" height="30" alt="Logo"> Saber
 
 > [!WARNING]
-> **This is a personal fork of [Saber](https://github.com/saber-notes/saber), not the official app.**
+> **This is a modified fork of [Saber](https://github.com/saber-notes/saber) for academic use, not the official app.**
 >
-> - It is made for my own use. It is not affiliated with or endorsed by the Saber developers.
+> - It is maintained by [LADISK](https://github.com/ladisk) for its own teaching and research. It is not affiliated with or endorsed by the Saber developers.
 > - The changes in this fork were written with an AI coding assistant.
 > - The changes are tested only lightly, mostly on one Linux PC and one iPad. Expect bugs, and keep your notes synced or backed up.
 > - Please do not report problems with this fork to the official Saber project.
@@ -16,7 +16,7 @@
 > - A Shapes tool in the toolbar: drag to draw a straight line, rectangle, circle or sine wave (½ to 4 periods, flipped by the drag direction).
 > - Line types: solid, dashed, dotted or centerline, for new shapes or any selected strokes.
 >
-> **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/klemengit/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
+> **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/ladisk/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
 
 [<img src='https://github.com/saber-notes/saber/blob/main/assets_raw/badges/google-play-badge.svg'
     alt='Get it on Google Play'
