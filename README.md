@@ -13,6 +13,7 @@
 > - Two-finger tap to undo, three-finger tap to redo.
 > - Apple Pencil double tap switches between the pen and the eraser.
 > - A Shapes tool in the toolbar: drag to draw a straight line, rectangle or circle.
+> - Line types for shapes: solid, dashed, dotted or centerline.
 >
 > **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/klemengit/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
 
