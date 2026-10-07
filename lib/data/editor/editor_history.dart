@@ -148,6 +148,7 @@ class EditorHistoryItem {
     this.offset,
     this.resize,
     this.mirror,
+    this.pageMove,
     this.page,
     this.quillChange,
     this.colorChange,
@@ -164,6 +165,10 @@ class EditorHistoryItem {
        assert(
          type != .mirror || mirror != null,
          'Mirror must be provided for mirror',
+       ),
+       assert(
+         type != .moveToPage || pageMove != null,
+         'pageMove must be provided for moveToPage',
        ),
        assert(
          type != .deletePage || page != null,
@@ -205,6 +210,10 @@ class EditorHistoryItem {
 
   /// The axis of a mirror, and where its mirror line is.
   final ({Axis axis, double about})? mirror;
+
+  /// The pages a selection moved between, and how far it moved,
+  /// from the old page's coordinates to the new page's.
+  final ({int from, int to, Offset shift})? pageMove;
   final EditorPage? page;
   final DocChange? quillChange;
   final Map<Stroke, Change<Color>>? colorChange;
@@ -219,6 +228,7 @@ class EditorHistoryItem {
     Rect? offset,
     ({double factor, Offset anchor})? resize,
     ({Axis axis, double about})? mirror,
+    ({int from, int to, Offset shift})? pageMove,
     EditorPage? page,
     DocChange? quillChange,
     Map<Stroke, Change<Color>>? colorChange,
@@ -233,6 +243,7 @@ class EditorHistoryItem {
       offset: offset ?? this.offset,
       resize: resize ?? this.resize,
       mirror: mirror ?? this.mirror,
+      pageMove: pageMove ?? this.pageMove,
       page: page ?? this.page,
       quillChange: quillChange ?? this.quillChange,
       colorChange: colorChange ?? this.colorChange,
@@ -251,6 +262,7 @@ enum EditorHistoryItemType {
   move,
   resize,
   mirror,
+  moveToPage,
   quillChange,
   quillUndoneChange,
   changeColor,

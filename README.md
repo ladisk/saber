@@ -9,7 +9,7 @@
 > - Please do not report problems with this fork to the official Saber project.
 >
 > **Changes in this fork:**
-> - Resize a selection by dragging its corner handles, or mirror it horizontally or vertically.
+> - Resize a selection by dragging its corner handles, mirror it horizontally or vertically, or drag it onto another page.
 > - A Select by touch tool: tap or drag across elements to select them, like the eraser.
 > - Two-finger tap to undo, three-finger tap to redo.
 > - Apple Pencil double tap switches between the pen and the eraser.

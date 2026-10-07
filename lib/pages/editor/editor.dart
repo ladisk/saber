@@ -433,6 +433,10 @@ class EditorState extends State<Editor> {
             );
           }
 
+        case .moveToPage:
+          final (:from, :to, :shift) = item.pageMove!;
+          transferItems(item.strokes, item.images, to, from, -shift);
+
         case .mirror:
           // mirroring again undoes it
           final (:axis, :about) = item.mirror!;
@@ -510,6 +514,9 @@ class EditorState extends State<Editor> {
         );
       case .mirror:
         undo(item);
+      case .moveToPage:
+        final (:from, :to, :shift) = item.pageMove!;
+        undo(item.copyWith(pageMove: (from: to, to: from, shift: -shift)));
       case .quillChange:
         undo(item.copyWith(type: .quillUndoneChange));
       case .quillUndoneChange: // this will never happen
@@ -549,6 +556,71 @@ class EditorState extends State<Editor> {
         return i;
     }
     return null;
+  }
+
+  /// Moves [strokes] and [images] from page [from] to page [to],
+  /// shifting them by [shift] into the new page's coordinates.
+  void transferItems(
+    List<Stroke> strokes,
+    List<EditorImage> images,
+    int from,
+    int to,
+    Offset shift,
+  ) {
+    final source = coreInfo.pages[from];
+    final target = coreInfo.pages[to];
+    for (final stroke in strokes) {
+      source.strokes.remove(stroke);
+      stroke
+        ..shift(shift)
+        ..pageIndex = to
+        ..page = target;
+      target.insertStroke(stroke);
+    }
+    for (final image in images) {
+      source.images.remove(image);
+      image
+        ..dstRect = image.dstRect.shift(shift)
+        ..pageIndex = to
+        ..pageSize = target.size;
+      target.images.add(image);
+    }
+    source.redrawStrokes();
+    target.redrawStrokes();
+  }
+
+  /// Moves the selection to the page under its centre, if that is
+  /// a different page, and returns whether it moved.
+  bool _moveSelectionToPageUnderIt(Select select) {
+    final from = select.selectResult.pageIndex;
+    final source = coreInfo.pages[from];
+    final sourceBox = source.renderBox;
+    if (sourceBox == null) return false;
+
+    final center = select.selectResult.path.getBounds().center;
+    final to = onWhichPageIsFocalPoint(sourceBox.localToGlobal(center));
+    if (to == null || to == from) return false;
+    final targetBox = coreInfo.pages[to].renderBox!;
+
+    // where the old page's origin is, in the new page's coordinates
+    final shift = targetBox.globalToLocal(sourceBox.localToGlobal(.zero));
+    final strokes = select.selectResult.strokes;
+    final images = select.selectResult.images;
+    transferItems(strokes, images, from, to, shift);
+    select.selectResult
+      ..pageIndex = to
+      ..path = select.selectResult.path.shift(shift);
+
+    history.recordChange(
+      EditorHistoryItem(
+        type: .moveToPage,
+        pageIndex: to,
+        strokes: strokes,
+        images: images,
+        pageMove: (from: from, to: to, shift: moveOffset + shift),
+      ),
+    );
+    return true;
   }
 
   /// The position of the previous draw gesture event.
@@ -774,6 +846,9 @@ class EditorState extends State<Editor> {
           return;
         }
         if (moveOffset == .zero) return;
+        if (select.doneSelecting && _moveSelectionToPageUnderIt(select)) {
+          return;
+        }
         if (select.doneSelecting) {
           history.recordChange(
             EditorHistoryItem(
