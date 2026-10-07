@@ -20,9 +20,24 @@ class ToolPaletteItem {
   final bool isColor;
 }
 
+/// A run of related buttons on the [ToolPalette].
+class ToolPaletteGroup {
+  const new(this.items, {this.collapsible = false, int? current})
+    : current = current != null && current >= 0 ? current : null;
+
+  final List<ToolPaletteItem> items;
+
+  /// Whether the group shows only its [current] button,
+  /// with the others in a dropdown under it.
+  final bool collapsible;
+
+  /// The index in [items] of the current choice, if any.
+  final int? current;
+}
+
 /// A small panel of tools and colors that floats over the canvas.
 ///
-/// Drag the grip to move it; tap the grip to turn it
+/// Drag it by any part to move it; tap the grip to turn it
 /// between horizontal and vertical. The cross hides it.
 /// Its position is saved as a fraction of the canvas area.
 class ToolPalette extends StatefulWidget {
@@ -30,7 +45,7 @@ class ToolPalette extends StatefulWidget {
 
   /// Rows of button groups, with a small gap between groups.
   /// When the palette is vertical, rows become columns.
-  final List<List<List<ToolPaletteItem>>> rows;
+  final List<List<ToolPaletteGroup>> rows;
   final VoidCallback onClose;
 
   static const toolSize = 34.0;
@@ -77,7 +92,6 @@ class _ToolPaletteState extends State<ToolPalette> {
       builder: (context, constraints) {
         final grip = GestureDetector(
           behavior: .opaque,
-          onPanUpdate: (details) => _drag(details, constraints.biggest),
           onTap: () => setState(() {
             stows.toolPaletteVertical.value = !vertical;
           }),
@@ -109,42 +123,57 @@ class _ToolPaletteState extends State<ToolPalette> {
           child: FittedBox(
             key: _paletteKey,
             fit: .scaleDown,
-            child: Material(
-              elevation: 3,
-              color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
-              shape: RoundedRectangleBorder(borderRadius: .circular(18)),
-              child: Padding(
-                padding: const .all(2),
-                child: Flex(
-                  direction: direction == .horizontal ? .vertical : .horizontal,
-                  mainAxisSize: .min,
-                  crossAxisAlignment: .start,
-                  children: [
-                    for (final (index, row) in widget.rows.indexed)
-                      Flex(
-                        direction: direction,
-                        mainAxisSize: .min,
-                        children: [
-                          if (index == 0)
-                            grip
-                          else
-                            const SizedBox.square(
-                              dimension: ToolPalette._gripSize,
-                            ),
-                          for (final (index, group) in row.indexed) ...[
-                            if (index > 0) const SizedBox.square(dimension: 6),
-                            for (final item in group)
-                              SizedBox.square(
-                                dimension: item.isColor
-                                    ? ToolPalette.colorSize
-                                    : ToolPalette.toolSize,
-                                child: _Button(item: item),
+            // drag anywhere on the palette to move it,
+            // and don't let touches fall through to the page
+            child: GestureDetector(
+              behavior: .opaque,
+              onPanUpdate: (details) => _drag(details, constraints.biggest),
+              child: Material(
+                elevation: 3,
+                color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+                shape: RoundedRectangleBorder(borderRadius: .circular(18)),
+                child: Padding(
+                  padding: const .all(2),
+                  child: Flex(
+                    direction: direction == .horizontal
+                        ? .vertical
+                        : .horizontal,
+                    mainAxisSize: .min,
+                    crossAxisAlignment: .start,
+                    children: [
+                      for (final (index, row) in widget.rows.indexed)
+                        Flex(
+                          direction: direction,
+                          mainAxisSize: .min,
+                          children: [
+                            if (index == 0)
+                              grip
+                            else
+                              const SizedBox.square(
+                                dimension: ToolPalette._gripSize,
                               ),
+                            for (final (groupIndex, group) in row.indexed) ...[
+                              if (groupIndex > 0)
+                                const SizedBox.square(dimension: 6),
+                              if (group.collapsible)
+                                _Dropdown(group: group, vertical: vertical)
+                              else
+                                for (final item in group.items)
+                                  SizedBox.square(
+                                    dimension: item.isColor
+                                        ? ToolPalette.colorSize
+                                        : ToolPalette.toolSize,
+                                    child: _Button(
+                                      item: item,
+                                      onTap: item.onSelected,
+                                    ),
+                                  ),
+                            ],
+                            if (index == 0) close,
                           ],
-                          if (index == 0) close,
-                        ],
-                      ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -155,10 +184,82 @@ class _ToolPaletteState extends State<ToolPalette> {
   }
 }
 
+/// The current choice of a collapsible [ToolPaletteGroup],
+/// opening a list of all its choices below it
+/// (or beside it when the palette is vertical).
+///
+/// Tapping the button opens the list if it is already the selected
+/// choice or nothing is selected yet, otherwise it picks it,
+/// so e.g. the last shape is one tap away.
+class _Dropdown extends StatefulWidget {
+  const new({required this.group, required this.vertical});
+
+  final ToolPaletteGroup group;
+  final bool vertical;
+
+  @override
+  State<_Dropdown> createState() => _DropdownState();
+}
+
+class _DropdownState extends State<_Dropdown> {
+  final _controller = MenuController();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    final group = widget.group;
+    final current = group.items[group.current ?? 0];
+
+    return MenuAnchor(
+      controller: _controller,
+      style: MenuStyle(alignment: widget.vertical ? .topRight : .bottomLeft),
+      menuChildren: [
+        for (final item in group.items)
+          MenuItemButton(
+            leadingIcon: SizedBox(
+              width: 24,
+              child: IconTheme.merge(
+                data: IconThemeData(color: colorScheme.onSurface, size: 20),
+                child: Center(child: item.icon),
+              ),
+            ),
+            style: item.selected
+                ? MenuItemButton.styleFrom(
+                    backgroundColor: colorScheme.primaryContainer,
+                  )
+                : null,
+            onPressed: item.onSelected,
+            child: Text(item.tooltip),
+          ),
+      ],
+      child: SizedBox.square(
+        dimension: ToolPalette.toolSize,
+        child: _Button(
+          item: current,
+          expandable: true,
+          onTap: () {
+            if (_controller.isOpen) {
+              _controller.close();
+            } else if (group.current == null || current.selected) {
+              _controller.open();
+            } else {
+              current.onSelected();
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _Button extends StatelessWidget {
-  const new({required this.item});
+  const new({required this.item, required this.onTap, this.expandable = false});
 
   final ToolPaletteItem item;
+  final VoidCallback onTap;
+
+  /// Shows a small corner mark: tapping can open more choices.
+  final bool expandable;
 
   @override
   Widget build(BuildContext context) {
@@ -176,13 +277,49 @@ class _Button extends StatelessWidget {
             : Colors.transparent,
         clipBehavior: .antiAlias,
         child: InkWell(
-          onTap: item.onSelected,
+          onTap: onTap,
           child: IconTheme.merge(
             data: IconThemeData(color: colorScheme.onSurface, size: 20),
-            child: Center(child: item.icon),
+            child: Stack(
+              children: [
+                Center(child: item.icon),
+                if (expandable)
+                  Positioned(
+                    right: 5,
+                    bottom: 5,
+                    child: CustomPaint(
+                      size: const Size.square(5),
+                      painter: _CornerMarkPainter(colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// A small filled triangle in the bottom right corner.
+class _CornerMarkPainter extends CustomPainter {
+  const new(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width, 0)
+        ..lineTo(size.width, size.height)
+        ..lineTo(0, size.height)
+        ..close(),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CornerMarkPainter oldDelegate) =>
+      color != oldDelegate.color;
 }

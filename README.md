@@ -13,9 +13,9 @@
 > - A Select by touch tool: tap or drag across elements to select them, like the eraser.
 > - Two-finger tap to undo, three-finger tap to redo.
 > - Apple Pencil double tap switches between the pen and the eraser.
-> - A Shapes tool in the toolbar: drag to draw a straight line, rectangle, circle or sine wave (½ to 4 periods, flipped by the drag direction).
+> - A Shapes tool in the toolbar: drag to draw a straight line, an arrow with one or two heads, a rectangle, circle or sine wave (½ to 4 periods, flipped by the drag direction).
 > - Line types: solid, dashed, dotted or centerline, for new shapes or any selected strokes.
-> - A floating tool palette over the page with the pen, highlighter, eraser, selection tools, five colors, shapes and line types. Drag it anywhere; hide it with its cross and show it again from the ⋮ menu.
+> - A floating tool palette over the page with the pen, highlighter, eraser, laser pointer, selection tools, five colors, shapes, line types and three thicknesses. Drag it anywhere; hide it with its cross and show it again from the ⋮ menu.
 > - The pen and the Shapes tool share one color.
 >
 > **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/ladisk/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.

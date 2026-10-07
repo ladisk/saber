@@ -1218,6 +1218,9 @@ class EditorState extends State<Editor> {
     Colors.orange,
   ];
 
+  /// The stroke sizes on the tool palette, with how thick to draw each icon.
+  static const _paletteSizes = <(double, double)>[(1, 1.5), (3, 3.5), (15, 8)];
+
   bool get _isBallpointPen =>
       currentTool == Pen.currentPen && Pen.currentPen.toolId == .ballpointPen;
 
@@ -1232,7 +1235,7 @@ class EditorState extends State<Editor> {
   ///
   /// The first row has the tools and colors,
   /// the second the shapes and line types.
-  List<List<List<ToolPaletteItem>>> _toolPaletteRows(BuildContext context) {
+  List<List<ToolPaletteGroup>> _toolPaletteRows(BuildContext context) {
     final brightness = Theme.brightnessOf(context);
     final invert = stows.editorAutoInvert.value && brightness == .dark;
     final colorScheme = ColorScheme.of(context);
@@ -1248,10 +1251,25 @@ class EditorState extends State<Editor> {
         ? select.getCommonLineType()
         : null;
 
+    const paletteShapes = [
+      ShapeKind.line,
+      ShapeKind.arrow,
+      ShapeKind.doubleArrow,
+      ShapeKind.rectangle,
+      ShapeKind.circle,
+    ];
+    final currentSize = switch (currentTool) {
+      final Pen pen => pen.options.size,
+      _ => null,
+    };
+    final currentSizeIndex = _paletteSizes.indexWhere(
+      (entry) => entry.$1 == currentSize,
+    );
+
     // English only: this fork doesn't regenerate translations.
     return [
       [
-        [
+        ToolPaletteGroup([
           ToolPaletteItem(
             icon: const FaIcon(Pen.ballpointPenIcon, size: 18),
             tooltip: t.editor.pens.ballpointPen,
@@ -1272,8 +1290,14 @@ class EditorState extends State<Editor> {
               if (currentTool is! Eraser) setTool(Eraser());
             },
           ),
-        ],
-        [
+          ToolPaletteItem(
+            icon: const Icon(Symbols.stylus_laser_pointer),
+            tooltip: t.editor.pens.laserPointer,
+            selected: currentTool == LaserPointer.currentLaserPointer,
+            onSelected: () => setTool(LaserPointer.currentLaserPointer),
+          ),
+        ]),
+        ToolPaletteGroup([
           ToolPaletteItem(
             icon: const Icon(CupertinoIcons.lasso),
             tooltip: t.editor.toolbar.select,
@@ -1286,8 +1310,8 @@ class EditorState extends State<Editor> {
             selected: currentTool is Select && select.touchMode,
             onSelected: () => _setSelectMode(touchMode: true),
           ),
-        ],
-        [
+        ]),
+        ToolPaletteGroup([
           for (final color in _paletteColors)
             ToolPaletteItem(
               isColor: true,
@@ -1304,26 +1328,26 @@ class EditorState extends State<Editor> {
               selected: color.toARGB32() == currentColor,
               onSelected: () => setColor(color),
             ),
-        ],
+        ]),
       ],
       [
-        [
-          for (final kind in [
-            ShapeKind.line,
-            ShapeKind.rectangle,
-            ShapeKind.circle,
-          ])
-            ToolPaletteItem(
-              icon: Icon(kind.icon),
-              tooltip: kind.label,
-              selected: currentTool == shapeTool && shapeTool.kind == kind,
-              onSelected: () {
-                shapeTool.kind = kind;
-                setTool(shapeTool);
-              },
-            ),
-        ],
-        [
+        ToolPaletteGroup(
+          collapsible: true,
+          current: paletteShapes.indexOf(shapeTool.kind),
+          [
+            for (final kind in paletteShapes)
+              ToolPaletteItem(
+                icon: Icon(kind.icon),
+                tooltip: kind.label,
+                selected: currentTool == shapeTool && shapeTool.kind == kind,
+                onSelected: () {
+                  shapeTool.kind = kind;
+                  setTool(shapeTool);
+                },
+              ),
+          ],
+        ),
+        ToolPaletteGroup([
           for (final lineType in LineType.values)
             ToolPaletteItem(
               icon: Icon(lineType.icon),
@@ -1339,7 +1363,27 @@ class EditorState extends State<Editor> {
                 }
               },
             ),
-        ],
+        ]),
+        ToolPaletteGroup(collapsible: true, current: currentSizeIndex, [
+          for (final (size, iconThickness) in _paletteSizes)
+            ToolPaletteItem(
+              icon: Container(
+                width: 20,
+                height: iconThickness,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface,
+                  borderRadius: .circular(iconThickness / 2),
+                ),
+              ),
+              tooltip: 'Size ${size.round()}',
+              selected: size == currentSize,
+              onSelected: () {
+                if (currentTool case final Pen pen) {
+                  setState(() => pen.options.size = size);
+                }
+              },
+            ),
+        ]),
       ],
     ];
   }
