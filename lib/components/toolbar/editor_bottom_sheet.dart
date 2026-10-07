@@ -317,6 +317,15 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
               ],
             ),
             const SizedBox(height: 16),
+            ValueListenableBuilder(
+              valueListenable: stows.toolPaletteVisible,
+              builder: (context, visible, _) => CheckboxListTile.adaptive(
+                value: visible,
+                // English only: this fork doesn't regenerate translations.
+                title: const Text('Floating tool palette'),
+                onChanged: (value) => stows.toolPaletteVisible.value = value!,
+              ),
+            ),
             if (stows.loggedIn) ...[
               StatefulBuilder(
                 builder: (context, setState) {

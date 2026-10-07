@@ -332,6 +332,29 @@ class Stows {
         volatile: !_isOnMainIsolate,
       );
 
+  /// Where the floating tool palette sits, as a fraction of the canvas area,
+  /// so it stays in place when the window resizes or the iPad rotates.
+  final toolPaletteX = PlainStow<double>(
+        'toolPaletteX',
+        0.5,
+        volatile: !_isOnMainIsolate,
+      ),
+      toolPaletteY = PlainStow<double>(
+        'toolPaletteY',
+        0.02,
+        volatile: !_isOnMainIsolate,
+      );
+  final toolPaletteVisible = PlainStow(
+    'toolPaletteVisible',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+  final toolPaletteVertical = PlainStow(
+    'toolPaletteVertical',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final homeLayout = PlainStow(
     'homeLayout',
     HomeLayout.masonryGrid,

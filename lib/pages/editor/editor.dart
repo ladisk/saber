@@ -10,8 +10,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart' as flutter_quill;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
@@ -22,6 +24,7 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
+import 'package:saber/components/canvas/tool_palette.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
@@ -36,6 +39,7 @@ import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
+import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -1198,6 +1202,241 @@ class EditorState extends State<Editor> {
     return FileManager.validateFilename(newName);
   }
 
+  void _setSelectMode({required bool touchMode}) {
+    final select = Select.currentSelect;
+    if (select.touchMode != touchMode) select.unselect();
+    select.touchMode = touchMode;
+    setTool(select);
+  }
+
+  /// The colors on the tool palette: few and easy to tell apart.
+  static const _paletteColors = <Color>[
+    Colors.black,
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.orange,
+  ];
+
+  bool get _isBallpointPen =>
+      currentTool == Pen.currentPen && Pen.currentPen.toolId == .ballpointPen;
+
+  /// The palette always offers the plain pen, never the fountain or shape pen.
+  void _pickBallpointPen() => setTool(
+    Pen.currentPen.toolId == .ballpointPen
+        ? Pen.currentPen
+        : Pen.ballpointPen(),
+  );
+
+  /// The floating tool palette: rows of button groups.
+  ///
+  /// The first row has the tools and colors,
+  /// the second the shapes and line types.
+  List<List<List<ToolPaletteItem>>> _toolPaletteRows(BuildContext context) {
+    final brightness = Theme.brightnessOf(context);
+    final invert = stows.editorAutoInvert.value && brightness == .dark;
+    final colorScheme = ColorScheme.of(context);
+
+    final currentColor = switch (currentTool) {
+      final Pen pen => pen.color.withValues(alpha: 1).toARGB32(),
+      _ => null,
+    };
+    final shapeTool = ShapeTool.currentShapeTool;
+    final select = Select.currentSelect;
+    final usingSelection = currentTool is Select && select.doneSelecting;
+    final selectionLineType = usingSelection
+        ? select.getCommonLineType()
+        : null;
+
+    // English only: this fork doesn't regenerate translations.
+    return [
+      [
+        [
+          ToolPaletteItem(
+            icon: const FaIcon(Pen.ballpointPenIcon, size: 18),
+            tooltip: t.editor.pens.ballpointPen,
+            selected: _isBallpointPen,
+            onSelected: _pickBallpointPen,
+          ),
+          ToolPaletteItem(
+            icon: const FaIcon(Highlighter.highlighterIcon, size: 18),
+            tooltip: t.editor.pens.highlighter,
+            selected: currentTool == Highlighter.currentHighlighter,
+            onSelected: () => setTool(Highlighter.currentHighlighter),
+          ),
+          ToolPaletteItem(
+            icon: const FaIcon(FontAwesomeIcons.eraser, size: 18),
+            tooltip: t.editor.toolbar.toggleEraser,
+            selected: currentTool is Eraser,
+            onSelected: () {
+              if (currentTool is! Eraser) setTool(Eraser());
+            },
+          ),
+        ],
+        [
+          ToolPaletteItem(
+            icon: const Icon(CupertinoIcons.lasso),
+            tooltip: t.editor.toolbar.select,
+            selected: currentTool is Select && !select.touchMode,
+            onSelected: () => _setSelectMode(touchMode: false),
+          ),
+          ToolPaletteItem(
+            icon: const Icon(Symbols.arrow_selector_tool),
+            tooltip: 'Select by touch',
+            selected: currentTool is Select && select.touchMode,
+            onSelected: () => _setSelectMode(touchMode: true),
+          ),
+        ],
+        [
+          for (final color in _paletteColors)
+            ToolPaletteItem(
+              isColor: true,
+              icon: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: color.withInversion(invert),
+                  shape: .circle,
+                  border: Border.all(color: colorScheme.outline),
+                ),
+              ),
+              tooltip: 'Color',
+              selected: color.toARGB32() == currentColor,
+              onSelected: () => setColor(color),
+            ),
+        ],
+      ],
+      [
+        [
+          for (final kind in [
+            ShapeKind.line,
+            ShapeKind.rectangle,
+            ShapeKind.circle,
+          ])
+            ToolPaletteItem(
+              icon: Icon(kind.icon),
+              tooltip: kind.label,
+              selected: currentTool == shapeTool && shapeTool.kind == kind,
+              onSelected: () {
+                shapeTool.kind = kind;
+                setTool(shapeTool);
+              },
+            ),
+        ],
+        [
+          for (final lineType in LineType.values)
+            ToolPaletteItem(
+              icon: Icon(lineType.icon),
+              tooltip: lineType.label,
+              selected: usingSelection
+                  ? selectionLineType == lineType
+                  : shapeTool.lineType == lineType,
+              onSelected: () {
+                if (usingSelection) {
+                  setSelectionLineType(lineType);
+                } else {
+                  setState(() => shapeTool.lineType = lineType);
+                }
+              },
+            ),
+        ],
+      ],
+    ];
+  }
+
+  void setSelectionLineType(LineType lineType) {
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final strokes = select.selectResult.strokes;
+    if (strokes.isEmpty) return;
+
+    setState(() {
+      final lineTypeChange = <Stroke, Change<LineType>>{
+        for (final stroke in strokes)
+          stroke: Change(previous: stroke.lineType, current: lineType),
+      };
+      for (final stroke in strokes) {
+        stroke.lineType = lineType;
+      }
+      history.recordChange(
+        EditorHistoryItem(
+          type: .changeLineType,
+          pageIndex: strokes.first.pageIndex,
+          strokes: strokes,
+          lineTypeChange: lineTypeChange,
+          images: [],
+        ),
+      );
+      autosaveAfterDelay();
+    });
+  }
+
+  void setTool(Tool tool) {
+    if (tool is Eraser && currentTool is Eraser) {
+      // setTool(Eraser) is a special case to toggle the eraser on/off
+      tool = _lastNonEraserTool;
+    }
+
+    currentTool = tool;
+
+    if (tool is Highlighter) {
+      Highlighter.currentHighlighter = tool;
+    } else if (tool is Pencil) {
+      Pencil.currentPencil = tool;
+    } else if (tool is ShapeTool) {
+      // keeps its own instance, so the pen button is unaffected
+    } else if (tool is Pen) {
+      // switching pen type keeps the shared ink color
+      if (tool != Pen.currentPen) tool.color = Pen.currentPen.color;
+      Pen.currentPen = tool;
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  void setColor(Color color) {
+    setState(() {
+      updateColorBar(color);
+
+      if (currentTool is Highlighter) {
+        (currentTool as Highlighter).color = color.withAlpha(Highlighter.alpha);
+      } else if (currentTool is Pencil) {
+        (currentTool as Pen).color = color;
+      } else if (currentTool is Pen) {
+        // the pen and the shapes share one ink color
+        Pen.currentPen.color = color;
+        ShapeTool.currentShapeTool.color = color;
+        (currentTool as Pen).color = color;
+      } else if (currentTool is Select) {
+        // Changes color of selected strokes
+        final select = currentTool as Select;
+        if (select.doneSelecting && select.selectResult.strokes.isNotEmpty) {
+          final strokes = select.selectResult.strokes;
+
+          final colorChange = <Stroke, Change<Color>>{};
+          for (final stroke in strokes) {
+            colorChange[stroke] = Change(
+              previous: stroke.color,
+              current: color,
+            );
+            stroke.color = color;
+          }
+
+          history.recordChange(
+            EditorHistoryItem(
+              type: .changeColor,
+              pageIndex: strokes.first.pageIndex,
+              strokes: strokes,
+              colorChange: colorChange,
+              images: [],
+            ),
+          );
+          autosaveAfterDelay();
+        }
+      }
+    });
+  }
+
   void updateColorBar(Color color) {
     if (stows.recentColorsDontSavePresets.value) {
       if (ColorBar.colorPresets.any(
@@ -1531,7 +1770,7 @@ class EditorState extends State<Editor> {
         stows.editorToolbarAlignment.value == AxisDirection.left ||
         stows.editorToolbarAlignment.value == AxisDirection.right;
 
-    final Widget canvas = CanvasGestureDetector(
+    final Widget canvasGestureDetector = CanvasGestureDetector(
       key: _canvasGestureDetectorKey,
       filePath: coreInfo.filePath,
       isDrawGesture: isDrawGesture,
@@ -1568,6 +1807,24 @@ class EditorState extends State<Editor> {
       transformationController: _transformationController,
     );
 
+    final Widget canvas = Stack(
+      children: [
+        canvasGestureDetector,
+        if (!coreInfo.readOnly)
+          Positioned.fill(
+            child: ValueListenableBuilder(
+              valueListenable: stows.toolPaletteVisible,
+              builder: (context, visible, _) => visible
+                  ? ToolPalette(
+                      rows: _toolPaletteRows(context),
+                      onClose: () => stows.toolPaletteVisible.value = false,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+      ],
+    );
+
     final readonlyBanner = ReadOnlyBanner(
       coreInfo.readOnlyReason,
       action: coreInfo.readOnlyReason == .versionTooNew
@@ -1587,28 +1844,7 @@ class EditorState extends State<Editor> {
         bottom: stows.editorToolbarAlignment.value != AxisDirection.up,
         child: Toolbar(
           readOnly: coreInfo.readOnly,
-          setTool: (tool) {
-            if (tool is Eraser && currentTool is Eraser) {
-              // setTool(Eraser) is a special case to toggle the eraser on/off
-              tool = _lastNonEraserTool;
-            }
-
-            currentTool = tool;
-
-            if (tool is Highlighter) {
-              Highlighter.currentHighlighter = tool;
-            } else if (tool is Pencil) {
-              Pencil.currentPencil = tool;
-            } else if (tool is ShapeTool) {
-              // keeps its own instance, so the pen button is unaffected
-            } else if (tool is Pen) {
-              // switching pen type keeps the shared ink color
-              if (tool != Pen.currentPen) tool.color = Pen.currentPen.color;
-              Pen.currentPen = tool;
-            }
-
-            if (mounted) setState(() {});
-          },
+          setTool: setTool,
           currentTool: currentTool,
           duplicateSelection: () {
             final select = currentTool as Select;
@@ -1669,32 +1905,7 @@ class EditorState extends State<Editor> {
               autosaveAfterDelay();
             });
           },
-          setSelectionLineType: (lineType) {
-            final select = currentTool as Select;
-            if (!select.doneSelecting) return;
-            final strokes = select.selectResult.strokes;
-            if (strokes.isEmpty) return;
-
-            setState(() {
-              final lineTypeChange = <Stroke, Change<LineType>>{
-                for (final stroke in strokes)
-                  stroke: Change(previous: stroke.lineType, current: lineType),
-              };
-              for (final stroke in strokes) {
-                stroke.lineType = lineType;
-              }
-              history.recordChange(
-                EditorHistoryItem(
-                  type: .changeLineType,
-                  pageIndex: strokes.first.pageIndex,
-                  strokes: strokes,
-                  lineTypeChange: lineTypeChange,
-                  images: [],
-                ),
-              );
-              autosaveAfterDelay();
-            });
-          },
+          setSelectionLineType: setSelectionLineType,
           deleteSelection: () {
             final select = currentTool as Select;
             if (!select.doneSelecting) {
@@ -1726,51 +1937,7 @@ class EditorState extends State<Editor> {
               autosaveAfterDelay();
             });
           },
-          setColor: (color) {
-            setState(() {
-              updateColorBar(color);
-
-              if (currentTool is Highlighter) {
-                (currentTool as Highlighter).color = color.withAlpha(
-                  Highlighter.alpha,
-                );
-              } else if (currentTool is Pencil) {
-                (currentTool as Pen).color = color;
-              } else if (currentTool is Pen) {
-                // the pen and the shapes share one ink color
-                Pen.currentPen.color = color;
-                ShapeTool.currentShapeTool.color = color;
-                (currentTool as Pen).color = color;
-              } else if (currentTool is Select) {
-                // Changes color of selected strokes
-                final select = currentTool as Select;
-                if (select.doneSelecting &&
-                    select.selectResult.strokes.isNotEmpty) {
-                  final strokes = select.selectResult.strokes;
-
-                  final colorChange = <Stroke, Change<Color>>{};
-                  for (final stroke in strokes) {
-                    colorChange[stroke] = Change(
-                      previous: stroke.color,
-                      current: color,
-                    );
-                    stroke.color = color;
-                  }
-
-                  history.recordChange(
-                    EditorHistoryItem(
-                      type: .changeColor,
-                      pageIndex: strokes.first.pageIndex,
-                      strokes: strokes,
-                      colorChange: colorChange,
-                      images: [],
-                    ),
-                  );
-                  autosaveAfterDelay();
-                }
-              }
-            });
-          },
+          setColor: setColor,
           quillFocus: quillFocus,
           textEditing: currentTool == Tool.textEditing,
           toggleTextEditing: () => setState(() {
