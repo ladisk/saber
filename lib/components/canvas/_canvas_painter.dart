@@ -137,11 +137,21 @@ class CanvasPainter extends CustomPainter {
       if (!_drawShapeStroke(canvas, stroke, paint.color)) {
         canvas.drawPath(_selectPath(stroke), paint);
       }
+      _drawArrowheads(canvas, stroke, paint.color);
+    }
+  }
+
+  void _drawArrowheads(Canvas canvas, Stroke stroke, Color color) {
+    final triangles = stroke.arrowheadTriangles;
+    if (triangles.isEmpty) return;
+    final paint = Paint()..color = color;
+    for (final triangle in triangles) {
+      canvas.drawPath(Path()..addPolygon(triangle, true), paint);
     }
   }
 
   /// Draws [stroke] as an outline if it is a [CircleStroke],
-  /// a [RectangleStroke], or not [LineType.solid],
+  /// a [RectangleStroke], or not [LineType.solid] or with arrowheads,
   /// and returns whether it was drawn.
   bool _drawShapeStroke(Canvas canvas, Stroke stroke, Color color) {
     final strokeSize = stroke.options.size;
@@ -152,7 +162,7 @@ class CanvasPainter extends CustomPainter {
     } else if (stroke is RectangleStroke) {
       path = Path()
         ..addRRect(.fromRectAndRadius(stroke.rect, .circular(strokeSize / 4)));
-    } else if (stroke.lineType != .solid && stroke.length >= 2) {
+    } else if (stroke.drawnAsCenterline) {
       path = stroke.centerlinePath;
     } else {
       return false;
@@ -199,6 +209,7 @@ class CanvasPainter extends CustomPainter {
       paint.maskFilter = _getPencilMaskFilter(currentStroke!.options.size);
     }
 
+    _drawArrowheads(canvas, currentStroke!, paint.color);
     if (_drawShapeStroke(canvas, currentStroke!, paint.color)) return;
 
     // Current stroke always uses high quality

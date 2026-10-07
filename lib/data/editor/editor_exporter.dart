@@ -117,8 +117,7 @@ abstract class EditorExporter {
                         strokeSize / 4,
                         strokeSize / 4,
                       );
-                    } else if (stroke.lineType != .solid &&
-                        stroke.length >= 2) {
+                    } else if (stroke.drawnAsCenterline) {
                       shouldFillShape = false;
                       final points = stroke.centerlinePoints;
                       pdfGraphics.moveTo(
@@ -158,6 +157,22 @@ abstract class EditorExporter {
                       }
                       pdfGraphics.strokePath();
                       pdfGraphics.restoreContext();
+                    }
+
+                    for (final triangle in stroke.arrowheadTriangles) {
+                      pdfGraphics.moveTo(
+                        triangle.first.dx,
+                        pageSize.height - triangle.first.dy,
+                      );
+                      for (final corner in triangle.skip(1)) {
+                        pdfGraphics.lineTo(
+                          corner.dx,
+                          pageSize.height - corner.dy,
+                        );
+                      }
+                      pdfGraphics.closePath();
+                      pdfGraphics.setFillColor(strokeColor);
+                      pdfGraphics.fillPath();
                     }
                   }
                 },

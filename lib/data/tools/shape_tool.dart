@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/arrowheads.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
@@ -17,11 +18,19 @@ import 'package:sbn/has_size.dart';
 /// The labels are English only: this fork doesn't regenerate translations.
 enum ShapeKind {
   line('Line', Symbols.diagonal_line),
+  arrow('Arrow', Symbols.arrow_forward),
+  doubleArrow('Double arrow', Symbols.arrow_range),
   rectangle('Rectangle', Symbols.crop_square),
   circle('Circle', Symbols.circle),
   sine('Sine wave', Symbols.airwave);
 
   new(this.label, this.icon);
+
+  Arrowheads get arrowheads => switch (this) {
+    arrow => .end,
+    doubleArrow => .both,
+    _ => .none,
+  };
 
   final String label;
   final IconData icon;
@@ -87,14 +96,14 @@ class ShapeTool extends Pen {
     _start = position;
     _end = position;
     Pen.currentStroke = switch (kind) {
-      .line => Stroke(
+      .line || .arrow || .doubleArrow => Stroke(
         color: color,
         pressureEnabled: pressureEnabled,
         options: options.copyWith(isComplete: true),
         pageIndex: pageIndex,
         page: page,
         toolId: toolId,
-      ),
+      )..arrowheads = kind.arrowheads,
       .rectangle => RectangleStroke(
         color: color,
         pressureEnabled: pressureEnabled,

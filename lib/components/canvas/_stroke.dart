@@ -8,6 +8,7 @@ import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
+import 'package:saber/components/canvas/arrowheads.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/point_extensions.dart';
@@ -38,6 +39,16 @@ class Stroke {
   /// Saved only when not solid, so the official app
   /// shows these strokes as solid lines.
   LineType lineType = .solid;
+
+  /// Saved only when there are any, like [lineType].
+  Arrowheads arrowheads = .none;
+
+  /// The filled arrowheads to draw at the ends of this stroke.
+  List<List<Offset>> get arrowheadTriangles =>
+      // circles and rectangles have no points
+      arrowheads == .none || points.isEmpty
+      ? const []
+      : arrowheads.triangles(points.first, points.last, options.size);
 
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
@@ -90,8 +101,16 @@ class Stroke {
 
   /// The line through the stroke's points, ignoring its thickness.
   /// Used to draw strokes that aren't [LineType.solid].
-  Path get centerlinePath => Path()..addPolygon(points, false);
-  Iterable<Offset> get centerlinePoints => points;
+  Path get centerlinePath =>
+      Path()..addPolygon(centerlinePoints.toList(), false);
+  Iterable<Offset> get centerlinePoints => arrowheads == .none
+      ? points
+      : arrowheads.shaft(points.first, points.last, options.size);
+
+  /// Whether this stroke is drawn along [centerlinePoints]
+  /// instead of as a filled outline.
+  bool get drawnAsCenterline =>
+      (lineType != .solid || arrowheads != .none) && length >= 2;
 
   void markPolygonNeedsUpdating() {
     _lowQualityPolygon = null;
@@ -188,6 +207,7 @@ class Stroke {
         toolId: toolId,
       )
       ..lineType = .fromJson(json['lt'])
+      ..arrowheads = .fromJson(json['ah'])
       ..points.addAll(points);
   }
   Map<String, dynamic> toJson() {
@@ -203,6 +223,7 @@ class Stroke {
       'pe': pressureEnabled,
       'c': color.toARGB32(),
       if (lineType != .solid) 'lt': lineType.name,
+      if (arrowheads != .none) 'ah': arrowheads.name,
     }..addAll(options.toJson());
   }
 
@@ -457,6 +478,7 @@ class Stroke {
           toolId: toolId,
         )
         ..lineType = lineType
+        ..arrowheads = arrowheads
         ..points.addAll(points);
 }
 
