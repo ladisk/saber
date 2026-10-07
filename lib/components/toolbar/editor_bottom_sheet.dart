@@ -326,6 +326,15 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                 onChanged: (value) => stows.toolPaletteVisible.value = value!,
               ),
             ),
+            ValueListenableBuilder(
+              valueListenable: stows.showLadiskLogo,
+              builder: (context, visible, _) => CheckboxListTile.adaptive(
+                value: visible,
+                // English only: this fork doesn't regenerate translations.
+                title: const Text('LADISK logo'),
+                onChanged: (value) => stows.showLadiskLogo.value = value!,
+              ),
+            ),
             if (stows.loggedIn) ...[
               StatefulBuilder(
                 builder: (context, setState) {

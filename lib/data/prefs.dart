@@ -355,6 +355,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the LADISK logo is shown in the bottom left corner of the editor.
+  final showLadiskLogo = PlainStow(
+    'showLadiskLogo',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final homeLayout = PlainStow(
     'homeLayout',
     HomeLayout.masonryGrid,

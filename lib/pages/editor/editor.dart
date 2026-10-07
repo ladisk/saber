@@ -22,6 +22,7 @@ import 'package:saber/components/canvas/canvas.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/ladisk_logo.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/tool_palette.dart';
@@ -1854,6 +1855,11 @@ class EditorState extends State<Editor> {
     final Widget canvas = Stack(
       children: [
         canvasGestureDetector,
+        ValueListenableBuilder(
+          valueListenable: stows.showLadiskLogo,
+          builder: (context, visible, _) =>
+              visible ? const LadiskLogo() : const SizedBox.shrink(),
+        ),
         if (!coreInfo.readOnly)
           Positioned.fill(
             child: ValueListenableBuilder(
