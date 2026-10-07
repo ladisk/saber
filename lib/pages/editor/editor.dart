@@ -1602,6 +1602,8 @@ class EditorState extends State<Editor> {
             } else if (tool is ShapeTool) {
               // keeps its own instance, so the pen button is unaffected
             } else if (tool is Pen) {
+              // switching pen type keeps the shared ink color
+              if (tool != Pen.currentPen) tool.color = Pen.currentPen.color;
               Pen.currentPen = tool;
             }
 
@@ -1732,7 +1734,12 @@ class EditorState extends State<Editor> {
                 (currentTool as Highlighter).color = color.withAlpha(
                   Highlighter.alpha,
                 );
+              } else if (currentTool is Pencil) {
+                (currentTool as Pen).color = color;
               } else if (currentTool is Pen) {
+                // the pen and the shapes share one ink color
+                Pen.currentPen.color = color;
+                ShapeTool.currentShapeTool.color = color;
                 (currentTool as Pen).color = color;
               } else if (currentTool is Select) {
                 // Changes color of selected strokes
