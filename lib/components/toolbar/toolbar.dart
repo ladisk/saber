@@ -415,7 +415,8 @@ class _ToolbarState extends State<Toolbar> {
                       toolOptionsType.value = .shapes;
                     }
                   } else {
-                    toolOptionsType.value = .hide;
+                    // the shape menu is needed more often than the pen menu
+                    toolOptionsType.value = .shapes;
                     widget.setTool(ShapeTool.currentShapeTool);
                   }
                 },
