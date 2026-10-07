@@ -17,6 +17,7 @@
 > - Line types: solid, dashed, dotted or centerline, for new shapes or any selected strokes.
 > - A floating tool palette over the page with the pen, highlighter, eraser, laser pointer, selection tools, five colors, shapes, line types and three thicknesses. Drag it anywhere; hide it with its cross and show it again from the ⋮ menu.
 > - The pen and the Shapes tool share one color.
+> - Solve maths from the selection bar: handwritten expressions, equations and units are read as LaTeX by Claude, checked and edited by you, then solved (with SymPy in Anthropic's code sandbox) and inserted next to the handwriting. Needs your own Anthropic API key; the selection is sent to Anthropic.
 >
 > **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/ladisk/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
 
