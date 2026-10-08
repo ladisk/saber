@@ -314,6 +314,26 @@ class CanvasPainter extends CustomPainter {
       canvas.drawCircle(handle, Select.handleRadius * pixel, fill);
       canvas.drawCircle(handle, Select.handleRadius * pixel, border);
     }
+
+    // the rotate handle is filled, unlike the resize handles
+    final rotateHandle = select.rotateHandle(currentScale);
+    canvas.drawLine(
+      currentSelection!.path.getBounds().topCenter,
+      rotateHandle,
+      border..strokeWidth = pixel,
+    );
+    canvas.drawCircle(
+      rotateHandle,
+      Select.handleRadius * pixel,
+      Paint()..color = primaryColor,
+    );
+    canvas.drawCircle(
+      rotateHandle,
+      Select.handleRadius * pixel,
+      fill
+        ..style = .stroke
+        ..strokeWidth = 2 * pixel,
+    );
   }
 
   static const double _pageIndicatorFontSize = 20;

@@ -148,6 +148,7 @@ class EditorHistoryItem {
     this.offset,
     this.resize,
     this.mirror,
+    this.rotate,
     this.pageMove,
     this.page,
     this.quillChange,
@@ -165,6 +166,10 @@ class EditorHistoryItem {
        assert(
          type != .mirror || mirror != null,
          'Mirror must be provided for mirror',
+       ),
+       assert(
+         type != .rotate || rotate != null,
+         'Rotate must be provided for rotate',
        ),
        assert(
          type != .moveToPage || pageMove != null,
@@ -211,6 +216,11 @@ class EditorHistoryItem {
   /// The axis of a mirror, and where its mirror line is.
   final ({Axis axis, double about})? mirror;
 
+  /// The angle of a rotation in radians, the point it was rotated about,
+  /// and the strokes swapped in for selected rectangles, mapped back to
+  /// the strokes to restore on undo.
+  final ({double angle, Offset center, Map<Stroke, Stroke> rectangles})? rotate;
+
   /// The pages a selection moved between, and how far it moved,
   /// from the old page's coordinates to the new page's.
   final ({int from, int to, Offset shift})? pageMove;
@@ -228,6 +238,7 @@ class EditorHistoryItem {
     Rect? offset,
     ({double factor, Offset anchor})? resize,
     ({Axis axis, double about})? mirror,
+    ({double angle, Offset center, Map<Stroke, Stroke> rectangles})? rotate,
     ({int from, int to, Offset shift})? pageMove,
     EditorPage? page,
     DocChange? quillChange,
@@ -243,6 +254,7 @@ class EditorHistoryItem {
       offset: offset ?? this.offset,
       resize: resize ?? this.resize,
       mirror: mirror ?? this.mirror,
+      rotate: rotate ?? this.rotate,
       pageMove: pageMove ?? this.pageMove,
       page: page ?? this.page,
       quillChange: quillChange ?? this.quillChange,
@@ -262,6 +274,7 @@ enum EditorHistoryItemType {
   move,
   resize,
   mirror,
+  rotate,
   moveToPage,
   quillChange,
   quillUndoneChange,

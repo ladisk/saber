@@ -141,6 +141,12 @@ class CircleStroke extends Stroke {
   }
 
   @override
+  void rotate(double angle, Offset center) {
+    this.center = this.center.rotateAbout(angle, center);
+    super.rotate(angle, center);
+  }
+
+  @override
   @Deprecated('We already know the shape is a circle.')
   RecognizedUnistroke detectShape() {
     return RecognizedUnistroke(

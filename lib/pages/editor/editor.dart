@@ -446,6 +446,21 @@ class EditorState extends State<Editor> {
           final (:from, :to, :shift) = item.pageMove!;
           transferItems(item.strokes, item.images, to, from, -shift);
 
+        case .rotate:
+          final (:angle, :center, :rectangles) = item.rotate!;
+          Select.rotateItems(item.strokes, item.images, -angle, center);
+          final select = Select.currentSelect;
+          if (select.doneSelecting) {
+            select.selectResult.path = select.selectResult.path.rotateAbout(
+              -angle,
+              center,
+            );
+          }
+          select.replaceStrokes(
+            rectangles,
+            coreInfo.pages[item.pageIndex].strokes,
+          );
+
         case .mirror:
           // mirroring again undoes it
           final (:axis, :about) = item.mirror!;
@@ -480,7 +495,10 @@ class EditorState extends State<Editor> {
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
       }
 
-      if (item.type != .move && item.type != .resize && item.type != .mirror) {
+      if (item.type != .move &&
+          item.type != .resize &&
+          item.type != .mirror &&
+          item.type != .rotate) {
         Select.currentSelect.unselect();
       }
     });
@@ -523,6 +541,21 @@ class EditorState extends State<Editor> {
         );
       case .mirror:
         undo(item);
+      case .rotate:
+        // rotate the other way and put the plain strokes back
+        final (:angle, :center, :rectangles) = item.rotate!;
+        undo(
+          item.copyWith(
+            rotate: (
+              angle: -angle,
+              center: center,
+              rectangles: {
+                for (final MapEntry(:key, :value) in rectangles.entries)
+                  value: key,
+              },
+            ),
+          ),
+        );
       case .moveToPage:
         final (:from, :to, :shift) = item.pageMove!;
         undo(item.copyWith(pageMove: (from: to, to: from, shift: -shift)));
@@ -718,7 +751,14 @@ class EditorState extends State<Editor> {
               _transformationController.value.approxScale,
             )
           : null;
-      if (handleIndex != null) {
+      if (onSelectedPage &&
+          select.rotateHandleAt(
+            position,
+            _transformationController.value.approxScale,
+          )) {
+        // rotate selection in onDrawUpdate
+        select.onRotateStart(position, page.strokes);
+      } else if (handleIndex != null) {
         // resize selection in onDrawUpdate
         select.onResizeStart(handleIndex);
       } else if (onSelectedPage &&
@@ -767,7 +807,9 @@ class EditorState extends State<Editor> {
       removeExcessPages();
     } else if (currentTool is Select) {
       final select = currentTool as Select;
-      if (select.isResizing) {
+      if (select.isRotating) {
+        select.onRotateUpdate(position);
+      } else if (select.isResizing) {
         select.onResizeUpdate(position);
       } else if (select.isPicking) {
         select.touchAt(position, page.strokes, page.images);
@@ -834,6 +876,20 @@ class EditorState extends State<Editor> {
         );
       } else if (currentTool is Select) {
         final select = currentTool as Select;
+        if (select.isRotating) {
+          final rotate = select.onRotateEnd(page.strokes);
+          if (rotate == null) return;
+          history.recordChange(
+            EditorHistoryItem(
+              type: .rotate,
+              pageIndex: dragPageIndex!,
+              strokes: [...select.selectResult.strokes],
+              images: [...select.selectResult.images],
+              rotate: rotate,
+            ),
+          );
+          return;
+        }
         if (select.isResizing) {
           final resize = select.onResizeEnd();
           if (resize.factor == 1) return;

@@ -151,6 +151,36 @@ class RectangleStroke extends Stroke {
     super.scale(factor, anchor);
   }
 
+  /// Only right angles keep a rectangle's shape:
+  /// use [toPolygonStroke] for any other angle.
+  @override
+  void rotate(double angle, Offset center) {
+    rect = .fromPoints(
+      rect.topLeft.rotateAbout(angle, center),
+      rect.bottomRight.rotateAbout(angle, center),
+    );
+    super.rotate(angle, center);
+  }
+
+  /// A plain stroke around the same outline, which can be rotated
+  /// to any angle. The file format only has upright rectangles.
+  Stroke toPolygonStroke() {
+    final polygon = getPolygon(quality: .high);
+    return Stroke(
+      color: color,
+      pressureEnabled: pressureEnabled,
+      // streamline would round the corners
+      options: options.copyWith(isComplete: true, streamline: 0)
+        ..start.taperEnabled = false
+        ..end.taperEnabled = false,
+      pageIndex: pageIndex,
+      page: page,
+      toolId: toolId,
+    )
+      ..addPoints([...polygon, polygon.first])
+      ..lineType = lineType;
+  }
+
   @override
   @Deprecated('We already know the shape is a rectangle.')
   RecognizedUnistroke detectShape() {

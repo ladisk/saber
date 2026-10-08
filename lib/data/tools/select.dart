@@ -51,6 +51,7 @@ class Select extends Tool {
   void unselect() {
     doneSelecting = false;
     resizeAnchor = null;
+    rotateCenter = null;
     selectResult.pageIndex = -1;
   }
 
@@ -200,6 +201,138 @@ class Select extends Tool {
     for (final image in images) {
       image.dstRect = image.dstRect.scaleAbout(factor, anchor);
     }
+  }
+
+  /// How far above the selection the rotate handle is, in screen pixels.
+  static const rotateHandleDistance = 32.0;
+
+  /// Rotations snap to multiples of this angle.
+  static const rotateStep = pi / 12;
+
+  /// Where the rotate handle is, above the middle of the selection.
+  ///
+  /// [scale] is the canvas zoom level, so that the handle
+  /// is the same distance away on screen regardless of zoom.
+  Offset rotateHandle(double scale) =>
+      selectResult.path.getBounds().topCenter -
+      Offset(0, rotateHandleDistance / scale);
+
+  /// Whether [position] is on the rotate handle.
+  bool rotateHandleAt(Offset position, double scale) =>
+      doneSelecting &&
+      (rotateHandle(scale) - position).distance <= handleHitRadius / scale;
+
+  /// The point the selection is being rotated about,
+  /// or null if it isn't being rotated.
+  Offset? rotateCenter;
+
+  /// The total angle of the current rotation so far, in radians.
+  var rotateAngle = 0.0;
+
+  /// The pointer's direction from [rotateCenter] when the rotation started.
+  var _rotateStartDirection = 0.0;
+
+  /// The selected rectangles, keyed by the plain strokes
+  /// that replace them while rotating.
+  var _rotatedRectangles = <Stroke, RectangleStroke>{};
+
+  bool get isRotating => rotateCenter != null;
+
+  /// Starts rotating the selection with the pointer at [position].
+  ///
+  /// Selected rectangles are replaced in [pageStrokes] by plain strokes,
+  /// because only upright rectangles can be saved.
+  void onRotateStart(Offset position, List<Stroke> pageStrokes) {
+    final center = rotateCenter = selectResult.path.getBounds().center;
+    _rotateStartDirection = (position - center).direction;
+    rotateAngle = 0;
+    _rotatedRectangles = {
+      for (final stroke in selectResult.strokes)
+        if (stroke is RectangleStroke) stroke.toPolygonStroke(): stroke,
+    };
+    replaceStrokes(
+      _rotatedRectangles.map((polygon, rect) => MapEntry(rect, polygon)),
+      pageStrokes,
+    );
+  }
+
+  /// Rotates the selection so it follows [position],
+  /// in steps of [rotateStep].
+  void onRotateUpdate(Offset position) {
+    final center = rotateCenter!;
+    if (position == center) return;
+    final turned = (position - center).direction - _rotateStartDirection;
+    // between -pi and pi, so the recorded angle is the shortest way round
+    final angle =
+        (atan2(sin(turned), cos(turned)) / rotateStep).round() * rotateStep;
+    if (angle == rotateAngle) return;
+    final step = angle - rotateAngle;
+    rotateItems(selectResult.strokes, selectResult.images, step, center);
+    selectResult.path = selectResult.path.rotateAbout(step, center);
+    rotateAngle = angle;
+  }
+
+  /// Ends the rotation and returns its angle, the point it was
+  /// rotated about, and the rectangles that were replaced,
+  /// keyed by their replacements.
+  ///
+  /// Returns null if the selection ended up unrotated,
+  /// putting any rectangles back into [pageStrokes].
+  ({double angle, Offset center, Map<Stroke, Stroke> rectangles})?
+  onRotateEnd(List<Stroke> pageStrokes) {
+    final result = (
+      angle: rotateAngle,
+      center: rotateCenter!,
+      rectangles: _rotatedRectangles,
+    );
+    rotateCenter = null;
+    rotateAngle = 0;
+    _rotatedRectangles = {};
+    if (result.angle != 0) return result;
+    replaceStrokes(result.rectangles, pageStrokes);
+    return null;
+  }
+
+  /// Rotates [strokes] and [images] by [angle] radians about [center].
+  ///
+  /// Images move to their rotated place but stay upright.
+  static void rotateItems(
+    List<Stroke> strokes,
+    List<EditorImage> images,
+    double angle,
+    Offset center,
+  ) {
+    for (final stroke in strokes) {
+      stroke.rotate(angle, center);
+    }
+    for (final image in images) {
+      image.dstRect = .fromCenter(
+        center: image.dstRect.center.rotateAbout(angle, center),
+        width: image.dstRect.width,
+        height: image.dstRect.height,
+      );
+    }
+  }
+
+  /// Replaces each key of [replacements] with its value
+  /// in [pageStrokes] and in the selection.
+  ///
+  /// The selection gets a new list, since history items
+  /// may share the old one.
+  void replaceStrokes(
+    Map<Stroke, Stroke> replacements,
+    List<Stroke> pageStrokes,
+  ) {
+    if (replacements.isEmpty) return;
+    for (int i = 0; i < pageStrokes.length; i++) {
+      pageStrokes[i] = replacements[pageStrokes[i]] ?? pageStrokes[i];
+    }
+    selectResult = selectResult.copyWith(
+      strokes: [
+        for (final stroke in selectResult.strokes)
+          replacements[stroke] ?? stroke,
+      ],
+    );
   }
 
   /// Mirrors the selection across its centre line

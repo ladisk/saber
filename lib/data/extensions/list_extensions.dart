@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -65,6 +66,33 @@ extension OffsetMirrorExtensions on Offset {
     .horizontal => Offset(2 * about - dx, dy),
     .vertical => Offset(dx, 2 * about - dy),
   };
+}
+
+/// Rotates by [angle] radians about [center],
+/// clockwise on screen because y points down.
+extension OffsetRotateExtensions on Offset {
+  Offset rotateAbout(double angle, Offset center) {
+    final c = cos(angle), s = sin(angle);
+    final d = this - center;
+    return center + Offset(d.dx * c - d.dy * s, d.dx * s + d.dy * c);
+  }
+}
+
+extension PathRotateExtensions on Path {
+  /// See [OffsetRotateExtensions.rotateAbout].
+  Path rotateAbout(double angle, Offset center) {
+    final c = cos(angle), s = sin(angle);
+    final matrix = Float64List(16)
+      ..[0] = c
+      ..[1] = s
+      ..[4] = -s
+      ..[5] = c
+      ..[10] = 1
+      ..[12] = center.dx - c * center.dx + s * center.dy
+      ..[13] = center.dy - s * center.dx - c * center.dy
+      ..[15] = 1;
+    return transform(matrix);
+  }
 }
 
 extension RectMirrorExtensions on Rect {

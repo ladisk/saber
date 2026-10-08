@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
+import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
@@ -341,6 +344,106 @@ void main() {
           image.dstRect.shortestSide,
           moreOrLessEquals(CanvasImage.minImageSize),
         );
+      });
+    });
+
+    group('rotate', () {
+      late Stroke stroke;
+      late RectangleStroke rect;
+      late TestImage image;
+      late List<Stroke> pageStrokes;
+
+      setUp(() {
+        final select = Select.currentSelect;
+        stroke = Stroke(
+          color: Stroke.defaultColor,
+          pressureEnabled: Stroke.defaultPressureEnabled,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(100, 100)),
+          toolId: .fountainPen,
+        )..addPoint(const Offset(40, 30));
+        rect = RectangleStroke(
+          color: Stroke.defaultColor,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(100, 100)),
+          toolId: .shapePen,
+          rect: const .fromLTWH(25, 25, 10, 10),
+        );
+        image = TestImage(dstRect: const .fromLTWH(12, 20, 10, 10));
+        pageStrokes = [stroke, rect];
+
+        // Drag gesture in a 40x40 square shape, centred on (30, 30)
+        select.onDragStart(const Offset(10, 10), 0);
+        select.onDragUpdate(const Offset(10, 50));
+        select.onDragUpdate(const Offset(50, 50));
+        select.onDragUpdate(const Offset(50, 10));
+        select.onDragEnd(pageStrokes, [image]);
+      });
+
+      test('finds the handle above the selection', () {
+        final select = Select.currentSelect;
+        expect(select.rotateHandle(1), const Offset(30, 10 - 32));
+        expect(select.rotateHandleAt(const Offset(30, -20), 1), isTrue);
+        expect(select.rotateHandleAt(const Offset(30, 30), 1), isFalse);
+      });
+
+      test('rotates about the centre, keeping images upright', () {
+        final select = Select.currentSelect;
+        select
+          ..onRotateStart(select.rotateHandle(1), pageStrokes)
+          ..onRotateUpdate(const Offset(62, 30)); // a quarter turn
+        final rotate = select.onRotateEnd(pageStrokes)!;
+
+        expect(rotate.angle, moreOrLessEquals(pi / 2));
+        expect(rotate.center, const Offset(30, 30));
+        expect(select.isRotating, isFalse);
+        expect(stroke.points.single.dx, moreOrLessEquals(30));
+        expect(stroke.points.single.dy, moreOrLessEquals(40));
+        expect(image.dstRect.center.dx, moreOrLessEquals(35));
+        expect(image.dstRect.center.dy, moreOrLessEquals(17));
+        expect(image.dstRect.size, const Size(10, 10));
+      });
+
+      test('snaps to steps of 15°', () {
+        final select = Select.currentSelect;
+        select.onRotateStart(select.rotateHandle(1), pageStrokes);
+        // 50° clockwise from straight up
+        select.onRotateUpdate(
+          const Offset(30, 30) + Offset.fromDirection(-pi / 2 + pi * 50 / 180),
+        );
+        expect(select.rotateAngle, moreOrLessEquals(pi / 4));
+      });
+
+      test('swaps rectangles for plain strokes while rotated', () {
+        final select = Select.currentSelect;
+        select
+          ..onRotateStart(select.rotateHandle(1), pageStrokes)
+          ..onRotateUpdate(const Offset(62, 30));
+        final rotate = select.onRotateEnd(pageStrokes)!;
+
+        final polygon = pageStrokes[1];
+        expect(polygon, isNot(isA<RectangleStroke>()));
+        expect(select.selectResult.strokes, contains(polygon));
+        expect(rotate.rectangles, {polygon: rect});
+        expect(
+          polygon.centerlinePath.getBounds().center.dx,
+          moreOrLessEquals(30),
+        );
+      });
+
+      test('an unrotated selection keeps its rectangles', () {
+        final select = Select.currentSelect;
+        final handle = select.rotateHandle(1);
+        select
+          ..onRotateStart(handle, pageStrokes)
+          ..onRotateUpdate(const Offset(62, 30))
+          ..onRotateUpdate(handle);
+        expect(select.onRotateEnd(pageStrokes), isNull);
+        expect(pageStrokes, [stroke, rect]);
+        expect(select.selectResult.strokes, contains(rect));
       });
     });
 

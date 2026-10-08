@@ -99,6 +99,18 @@ class Stroke {
     markPolygonNeedsUpdating();
   }
 
+  /// Rotates the stroke by [angle] radians about [center].
+  /// See [OffsetRotateExtensions.rotateAbout].
+  void rotate(double angle, Offset center) {
+    if (angle == 0) return;
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
+      final rotated = point.rotateAbout(angle, center);
+      points[i] = PointVector(rotated.dx, rotated.dy, point.pressure);
+    }
+    markPolygonNeedsUpdating();
+  }
+
   /// The line through the stroke's points, ignoring its thickness.
   /// Used to draw strokes that aren't [LineType.solid].
   Path get centerlinePath =>
