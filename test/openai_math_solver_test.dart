@@ -116,6 +116,26 @@ m = 2 kg, so F = 2 \\cdot 9.81 = 19.62\\,\\mathrm{N} and \\frac{1}{2}.
     expect(body(requests.single)['model'], 'some/model');
   });
 
+  test('unescaped LaTeX backslashes in the JSON are tolerated', () {
+    List<Object?> read(String reply) =>
+        OpenAiMathSolver.decodeJson(reply, key: 'expressions')['expressions'];
+
+    // invalid escapes, which used to give "Could not understand the reply"
+    expect(read(r'{"expressions": ["F = 3\,\mathrm{kg}"]}'), [
+      r'F = 3\,\mathrm{kg}',
+    ]);
+    // valid JSON escapes that are LaTeX commands here
+    expect(read(r'{"expressions": ["\frac{1}{2}", "\theta + \nu \rho"]}'), [
+      r'\frac{1}{2}',
+      r'\theta + \nu \rho',
+    ]);
+    // correctly escaped JSON is unchanged, including \" and \u
+    expect(read(r'{"expressions": ["\\frac{a}{b}", "\"q\" \u00b0"]}'), [
+      r'\frac{a}{b}',
+      '"q" °',
+    ]);
+  });
+
   test('errors are reported in plain words', () async {
     Future<String> failure(int status, Object body) async {
       try {

@@ -69,7 +69,7 @@ You transcribe handwritten mathematics from an engineering notes app into LaTeX.
 - Write units upright with a thin space, e.g. 9.81\\,\\mathrm{m/s^2} or 3\\,\\mathrm{kN}. Do not use siunitx (\\SI, \\si, \\qty).
 - Use only LaTeX that KaTeX can render. Do not wrap entries in \$ or \\[ \\].
 - If nothing mathematical is readable, return an empty list.
-Reply with only this JSON object:
+Reply with only this JSON object, writing every backslash twice as JSON requires (e.g. "9.81\\\\,\\\\mathrm{N}"):
 {"expressions": ["<LaTeX>", ...]}''';
 
   static const _solveSystem = '''
@@ -80,7 +80,7 @@ You solve handwritten mathematics for an engineering notes app. The input is a n
 - Give results with units in a sensible SI unit (e.g. N, kN, m/s, MPa), numbers to 4 significant digits unless the result is exact.
 - Results are LaTeX that KaTeX can render: units upright with a thin space (12.5\\,\\mathrm{m/s}), no siunitx, no \$ delimiters. For an evaluated expression give the value only; for a solved equation give the unknowns, e.g. x = 2,\\; y = -1.
 - If an expression is ambiguous, make the most likely reading and say so in note; if it cannot be solved, say why in note and leave result empty.
-You may work through the calculation first. End your reply with only this JSON object and nothing after it:
+You may work through the calculation first. End your reply with only this JSON object and nothing after it, writing every backslash twice as JSON requires (e.g. "\\\\frac{1}{2}"):
 {"results": [{"input": "<the LaTeX input>", "result": "<LaTeX result>", "note": "<short remark or empty>"}]}''';
 
   @override
@@ -204,8 +204,21 @@ You may work through the calculation first. End your reply with only this JSON o
     return content;
   }
 
+  /// A backslash that starts `\\`, `\"`, `\/` or `\uXXXX`, or a lone one.
+  static final _backslash = RegExp(r'\\(?:[\\"/]|u[0-9a-fA-F]{4})|\\');
+
+  /// Doubles each lone backslash in [json], so LaTeX that a model left
+  /// unescaped still decodes. `\n`, `\t`, `\f`, `\b` and `\r` count as
+  /// lone: in maths they start commands such as `\nu` or `\frac`, and
+  /// decoding them as escapes would silently break the LaTeX.
+  static String escapeLatexBackslashes(String json) => json.replaceAllMapped(
+    _backslash,
+    (m) => m[0]!.length == 1 ? r'\\' : m[0]!,
+  );
+
   /// Decodes the last JSON object in [text] that has [key], ignoring
   /// anything around it such as working or a Markdown code fence.
+  /// Unescaped LaTeX backslashes are tolerated.
   static Map<String, dynamic> decodeJson(String text, {required String key}) {
     final end = text.lastIndexOf('}');
     for (
@@ -214,7 +227,9 @@ You may work through the calculation first. End your reply with only this JSON o
       start = start == 0 ? -1 : text.lastIndexOf('{', start - 1)
     ) {
       try {
-        final json = jsonDecode(text.substring(start, end + 1));
+        final json = jsonDecode(
+          escapeLatexBackslashes(text.substring(start, end + 1)),
+        );
         if (json is Map<String, dynamic> && json.containsKey(key)) return json;
       } on FormatException {
         // try an earlier brace
