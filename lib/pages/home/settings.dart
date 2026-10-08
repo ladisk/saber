@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/settings/app_info.dart';
 import 'package:saber/components/settings/nextcloud_profile.dart';
+import 'package:saber/components/settings/settings_api_key.dart';
 import 'package:saber/components/settings/settings_button.dart';
 import 'package:saber/components/settings/settings_color.dart';
 import 'package:saber/components/settings/settings_directory_selector.dart';
@@ -498,6 +499,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.numbers,
                   pref: stows.printPageIndicators,
                 ),
+                const SettingsAnthropicApiKey(),
                 SettingsSubtitle(
                   subtitle: t.settings.prefCategories.performance,
                 ),
