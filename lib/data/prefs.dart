@@ -76,10 +76,20 @@ class Stows {
       ncPassword.value.isNotEmpty &&
       encPassword.value.isNotEmpty;
 
-  /// The Anthropic API key used to read and solve handwritten maths.
-  final anthropicApiKey = SecureStow(
-    'anthropicApiKey',
-    '',
+  /// The API key used to read and solve handwritten maths.
+  final mathApiKey = SecureStow('mathApiKey', '', volatile: !_isOnMainIsolate);
+
+  /// The base URL of the OpenAI-compatible API used for maths.
+  final mathApiBaseUrl = PlainStow(
+    'mathApiBaseUrl',
+    'https://openrouter.ai/api/v1',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// The model used to read and solve handwritten maths.
+  final mathModel = PlainStow(
+    'mathModel',
+    'google/gemini-3.8-flash',
     volatile: !_isOnMainIsolate,
   );
 

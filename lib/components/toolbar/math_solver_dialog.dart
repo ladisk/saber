@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
-import 'package:saber/data/math_solver/claude_math_solver.dart';
+import 'package:saber/data/math_solver/math_solver.dart';
 
 /// Inserts the rendered result into the note.
 /// [size] is the result's size in logical pixels.
@@ -34,7 +34,7 @@ class MathSolverDialog extends StatefulWidget {
   /// The selected handwriting, rendered by [SelectionImage].
   final Uint8List selectionPng;
 
-  /// The saved Anthropic API key, or an empty string.
+  /// The saved API key, or an empty string.
   final String apiKey;
   final ValueChanged<String> onApiKeyChanged;
 
@@ -190,13 +190,15 @@ class _MathSolverDialogState extends State<MathSolverDialog> {
           crossAxisAlignment: .start,
           children: [
             const Text(
-              'Handwriting is read and solved by Claude. '
-              'The selection is sent to Anthropic as an image.',
+              'Handwriting is read and solved by an AI model. '
+              'The selection is sent to the service as an image.',
             ),
             const SizedBox(height: 8),
             Text(
-              'Create an API key at console.anthropic.com. '
-              'It is stored on this device only.',
+              'Create an API key at openrouter.ai/keys. '
+              'It is stored on this device only. '
+              'The service and model can be changed in '
+              'Settings > Editor > Maths solver.',
               style: textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
@@ -204,10 +206,7 @@ class _MathSolverDialogState extends State<MathSolverDialog> {
               controller: _keyController,
               obscureText: true,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Anthropic API key',
-                hintText: 'sk-ant-...',
-              ),
+              decoration: const InputDecoration(labelText: 'API key'),
               onSubmitted: (_) => _saveKey(),
             ),
           ],
@@ -265,6 +264,10 @@ class _MathSolverDialogState extends State<MathSolverDialog> {
               if (r.note != null) Text(r.note!, style: textTheme.bodySmall),
               const SizedBox(height: 12),
             ],
+            Text(
+              'Worked out by the model, not computed: check the results.',
+              style: textTheme.bodySmall,
+            ),
             const Divider(),
             Text('Inserted into the note:', style: textTheme.bodySmall),
             const SizedBox(height: 8),

@@ -46,7 +46,7 @@ import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
-import 'package:saber/data/math_solver/claude_math_solver.dart';
+import 'package:saber/data/math_solver/openai_math_solver.dart';
 import 'package:saber/data/math_solver/selection_image.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
@@ -1410,16 +1410,20 @@ class EditorState extends State<Editor> {
     final pageIndex = select.selectResult.pageIndex;
     final bounds = SelectionImage.boundsOf(strokes);
     final png = await SelectionImage.render(strokes);
-    await stows.anthropicApiKey.waitUntilRead();
+    await stows.mathApiKey.waitUntilRead();
     if (!mounted) return;
 
     await showDialog(
       context: context,
       builder: (context) => MathSolverDialog(
         selectionPng: png,
-        apiKey: stows.anthropicApiKey.value,
-        onApiKeyChanged: (key) => stows.anthropicApiKey.value = key,
-        createSolver: (apiKey) => ClaudeMathSolver(apiKey: apiKey),
+        apiKey: stows.mathApiKey.value,
+        onApiKeyChanged: (key) => stows.mathApiKey.value = key,
+        createSolver: (apiKey) => OpenAiMathSolver(
+          apiKey: apiKey,
+          baseUrl: stows.mathApiBaseUrl.value,
+          model: stows.mathModel.value,
+        ),
         onInsert: (png, size) =>
             _insertMathResult(pageIndex, bounds, png, size),
       ),

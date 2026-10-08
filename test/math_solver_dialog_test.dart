@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/toolbar/math_solver_dialog.dart';
-import 'package:saber/data/math_solver/claude_math_solver.dart';
+import 'package:saber/data/math_solver/math_solver.dart';
 import 'package:saber/data/math_solver/selection_image.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
@@ -92,11 +92,11 @@ void main() {
     );
 
     // no key saved yet
-    await tester.enterText(find.byType(TextField), ' sk-ant-test ');
+    await tester.enterText(find.byType(TextField), ' sk-or-test ');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(savedKey, 'sk-ant-test');
-    expect(solverKey, 'sk-ant-test');
+    expect(savedKey, 'sk-or-test');
+    expect(solverKey, 'sk-or-test');
 
     // the recognised expressions can be edited or removed before solving
     expect(find.text('Check what was read, and fix it if needed:'), findsOne);
@@ -143,7 +143,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('The Anthropic API key was not accepted.'), findsOne);
+    expect(find.text('The API key was not accepted.'), findsOne);
 
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
@@ -163,9 +163,7 @@ class _FailingOnceSolver extends _FakeSolver {
     onAttempt();
     if (!_failed) {
       _failed = true;
-      throw const MathSolverException(
-        'The Anthropic API key was not accepted.',
-      );
+      throw const MathSolverException('The API key was not accepted.');
     }
     return super.recognize(png);
   }
