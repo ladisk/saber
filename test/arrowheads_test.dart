@@ -55,7 +55,7 @@ void main() {
 
   test('an arrowhead points along the line, tip on its end', () {
     final triangles = Arrowheads.end.triangles(
-      const Offset(0, 0),
+      Offset.zero,
       const Offset(100, 0),
       4,
     );
@@ -69,19 +69,19 @@ void main() {
 
   test('a double arrow has a head at each end', () {
     final triangles = Arrowheads.both.triangles(
-      const Offset(0, 0),
+      Offset.zero,
       const Offset(100, 0),
       4,
     );
     expect(triangles.map((triangle) => triangle.first), [
       const Offset(100, 0),
-      const Offset(0, 0),
+      Offset.zero,
     ]);
     expect(Arrowheads.both.triangles(.zero, .zero, 4), isEmpty);
   });
 
   test('the line stops inside its heads', () {
-    const start = Offset(0, 0), end = Offset(200, 0);
+    const start = Offset.zero, end = Offset(200, 0);
     expect(Arrowheads.none.shaft(start, end, 15), [start, end]);
 
     final [shaftStart, shaftEnd] = Arrowheads.end.shaft(start, end, 15);

@@ -57,6 +57,47 @@ void main() {
       expect(stroke.pageIndex, 2);
     });
 
+    testWidgets('holding still snaps a line to 15° steps', (tester) async {
+      tool
+        ..kind = .line
+        ..startAt(const Offset(10, 10), page, 0)
+        ..onDragUpdate(const Offset(100, 95), null);
+      await tester.pump(ShapeTool.holdDuration);
+      expect(tool.snapped, isTrue);
+
+      final bounds = tool.onDragEnd()!.highQualityPath.getBounds();
+      // nearly 45°, so it snaps to exactly 45°
+      expect(bounds.width, closeTo(bounds.height, 0.01));
+    });
+
+    testWidgets('moving keeps the shape unsnapped', (tester) async {
+      tool
+        ..kind = .rectangle
+        ..startAt(.zero, page, 0);
+      for (var x = 10.0; x < 100; x += 10) {
+        tool.onDragUpdate(Offset(x, 30), null);
+        await tester.pump(ShapeTool.holdDuration ~/ 2);
+      }
+      expect(tool.snapped, isFalse);
+      expect(
+        (tool.onDragEnd()! as RectangleStroke).rect,
+        const Rect.fromLTRB(0, 0, 90, 30),
+      );
+    });
+
+    test('a snapped rectangle is a square', () {
+      tool
+        ..kind = .rectangle
+        ..startAt(const Offset(60, 40), page, 0)
+        ..onDragUpdate(const Offset(10, 70), null)
+        ..snap()
+        ..onDragUpdate(const Offset(20, 100), null);
+      expect(
+        (tool.onDragEnd()! as RectangleStroke).rect,
+        const Rect.fromLTRB(0, 40, 60, 100),
+      );
+    });
+
     test('draws a sine wave that fills the dragged rectangle', () {
       tool
         ..kind = .sine

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
@@ -43,6 +45,9 @@ enum ShapeKind {
 /// a circle is centred on the start point,
 /// and a sine wave fills the rectangle between them with [sinePeriods].
 ///
+/// Holding still for [holdDuration] snaps the shape for the rest of the
+/// drag: lines to [snapAngle] steps, rectangles to squares.
+///
 /// Unlike [ShapePen], nothing is recognised from freehand drawing.
 /// Strokes are saved as shape pen strokes,
 /// so notes stay readable by the official app.
@@ -75,8 +80,27 @@ class ShapeTool extends Pen {
   var lineType = LineType.solid;
   var sinePeriods = 2.0;
 
+  /// How long the pointer must stay still to snap.
+  static const holdDuration = Duration(milliseconds: 500);
+
+  /// Movement smaller than this, in page pixels, counts as holding still.
+  static const holdTolerance = 3.0;
+
+  /// Snapped lines point in multiples of this angle.
+  static const snapAngle = pi / 12;
+
   var _start = Offset.zero;
   var _end = Offset.zero;
+
+  /// Whether the current drag has snapped.
+  var snapped = false;
+
+  /// Where the pointer was when it last started holding still.
+  var _holdAnchor = Offset.zero;
+  Timer? _holdTimer;
+
+  /// Repaints the page when the shape snaps without the pointer moving.
+  VoidCallback? _repaint;
 
   @override
   void onDragStart(
@@ -95,6 +119,10 @@ class ShapeTool extends Pen {
   void startAt(Offset position, HasSize page, int pageIndex) {
     _start = position;
     _end = position;
+    snapped = false;
+    _holdAnchor = position;
+    _holdTimer?.cancel();
+    _repaint = page is EditorPage ? page.redrawStrokes : null;
     Pen.currentStroke = switch (kind) {
       .line || .arrow || .doubleArrow => Stroke(
         color: color,
@@ -141,11 +169,29 @@ class ShapeTool extends Pen {
   @override
   void onDragUpdate(Offset position, double? pressure) {
     _end = position;
+    if (!snapped && (position - _holdAnchor).distance > holdTolerance) {
+      _holdAnchor = position;
+      _holdTimer?.cancel();
+      _holdTimer = Timer(holdDuration, snap);
+    }
     _reshape();
+  }
+
+  /// Snaps the shape being drawn, as if the pointer had been held still.
+  @visibleForTesting
+  void snap() {
+    if (Pen.currentStroke == null || snapped) return;
+    snapped = true;
+    HapticFeedback.selectionClick();
+    _reshape();
+    _repaint?.call();
   }
 
   @override
   Stroke? onDragEnd() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    _repaint = null;
     final stroke = Pen.currentStroke;
     Pen.currentStroke = null;
     if (stroke == null) return null;
@@ -158,39 +204,61 @@ class ShapeTool extends Pen {
   void _reshape() {
     final stroke = Pen.currentStroke;
     if (stroke == null) return;
+    final end = snapped ? _snappedEnd(stroke) : _end;
     switch (stroke) {
       case CircleStroke():
-        stroke.radius = (_end - _start).distance;
+        stroke.radius = (end - _start).distance;
       case RectangleStroke():
-        stroke.rect = .fromPoints(_start, _end);
+        stroke.rect = .fromPoints(_start, end);
       case Stroke() when kind == .sine:
         stroke
           ..clearPoints()
-          ..addPoints(_sinePoints());
+          ..addPoints(_sinePoints(end));
       case Stroke():
         stroke
           ..clearPoints()
           ..addPoint(_start)
-          ..addPoint(_end)
+          ..addPoint(end)
           ..convertToLine();
     }
     stroke.markPolygonNeedsUpdating();
   }
 
+  /// [_end] moved so the shape snaps: lines point in a multiple of
+  /// [snapAngle] and rectangles become squares, keeping their size.
+  Offset _snappedEnd(Stroke stroke) {
+    final delta = _end - _start;
+    switch (stroke) {
+      case RectangleStroke():
+        final side = max(delta.dx.abs(), delta.dy.abs());
+        return _start +
+            Offset(
+              delta.dx.isNegative ? -side : side,
+              delta.dy.isNegative ? -side : side,
+            );
+      case CircleStroke():
+      case Stroke() when kind == .sine:
+        return _end;
+      case Stroke():
+        final angle = (delta.direction / snapAngle).round() * snapAngle;
+        return _start + Offset.fromDirection(angle, delta.distance);
+    }
+  }
+
   /// [sinePeriods] of a sine wave from the left of the drag's rectangle
   /// to the right, centred vertically, touching its top and bottom.
   ///
-  /// It runs from [_start] to [_end], and its first hump goes the way
+  /// It runs from [_start] to [end], and its first hump goes the way
   /// the drag went vertically, so dragging leftwards or upwards mirrors it.
-  List<Offset> _sinePoints() {
+  List<Offset> _sinePoints(Offset end) {
     final numPoints = (sinePeriods * _sinePointsPerPeriod).ceil();
-    final middle = (_start.dy + _end.dy) / 2;
+    final middle = (_start.dy + end.dy) / 2;
     // signed, so the first hump follows the drag
-    final amplitude = (_end.dy - _start.dy) / 2;
+    final amplitude = (end.dy - _start.dy) / 2;
     return [
       for (var i = 0; i <= numPoints; i++)
         Offset(
-          _start.dx + (_end.dx - _start.dx) * i / numPoints,
+          _start.dx + (end.dx - _start.dx) * i / numPoints,
           middle + amplitude * sin(2 * pi * sinePeriods * i / numPoints),
         ),
     ];
