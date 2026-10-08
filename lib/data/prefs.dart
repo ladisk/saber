@@ -76,6 +76,13 @@ class Stows {
       ncPassword.value.isNotEmpty &&
       encPassword.value.isNotEmpty;
 
+  /// The Anthropic API key used to read and solve handwritten maths.
+  final anthropicApiKey = SecureStow(
+    'anthropicApiKey',
+    '',
+    volatile: !_isOnMainIsolate,
+  );
+
   final key = SecureStow('key', '', volatile: !_isOnMainIsolate);
   final iv = SecureStow('iv', '', volatile: !_isOnMainIsolate);
 

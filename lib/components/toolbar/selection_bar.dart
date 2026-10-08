@@ -10,6 +10,7 @@ class SelectionBar extends StatelessWidget {
   final VoidCallback deleteSelection;
   final ValueChanged<Axis> mirrorSelection;
   final ValueChanged<LineType> setLineType;
+  final VoidCallback solveSelection;
 
   const new({
     super.key,
@@ -17,6 +18,7 @@ class SelectionBar extends StatelessWidget {
     required this.deleteSelection,
     required this.mirrorSelection,
     required this.setLineType,
+    required this.solveSelection,
   });
 
   @override
@@ -72,6 +74,16 @@ class SelectionBar extends StatelessWidget {
           ),
           tooltip: 'Mirror vertically',
           icon: const RotatedBox(quarterTurns: 1, child: Icon(Icons.flip)),
+        ),
+        IconButton(
+          onPressed: solveSelection,
+          style: TextButton.styleFrom(
+            foregroundColor: ColorScheme.of(context).secondary,
+            backgroundColor: Colors.transparent,
+            shape: const CircleBorder(),
+          ),
+          tooltip: 'Solve maths',
+          icon: const Icon(Icons.functions),
         ),
         const SizedBox(width: 16),
         for (final lineType in LineType.values)

@@ -53,6 +53,7 @@ class Toolbar extends StatefulWidget {
     required this.duplicateSelection,
     required this.deleteSelection,
     required this.mirrorSelection,
+    required this.solveSelection,
     required this.setSelectionLineType,
     required this.exportAsSba,
     required this.exportAsPdf,
@@ -83,6 +84,7 @@ class Toolbar extends StatefulWidget {
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
   final ValueChanged<Axis> mirrorSelection;
+  final VoidCallback solveSelection;
   final ValueChanged<LineType> setSelectionLineType;
 
   final Future Function(BuildContext)? exportAsSba;
@@ -264,6 +266,7 @@ class _ToolbarState extends State<Toolbar> {
                 duplicateSelection: widget.duplicateSelection,
                 deleteSelection: widget.deleteSelection,
                 mirrorSelection: widget.mirrorSelection,
+                solveSelection: widget.solveSelection,
                 setLineType: widget.setSelectionLineType,
               ),
             },

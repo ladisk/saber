@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show max;
 
 import 'package:collapsible/collapsible.dart';
 import 'package:file_picker/file_picker.dart';
@@ -34,6 +35,7 @@ import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
 import 'package:saber/components/toolbar/editor_page_manager.dart';
+import 'package:saber/components/toolbar/math_solver_dialog.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
@@ -44,6 +46,8 @@ import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/math_solver/claude_math_solver.dart';
+import 'package:saber/data/math_solver/selection_image.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -1389,6 +1393,86 @@ class EditorState extends State<Editor> {
     ];
   }
 
+  /// Reads the selected handwriting as maths, solves it, and lets the user
+  /// insert the result next to the selection.
+  Future<void> solveSelection() async {
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final strokes = SelectionImage.writing(select.selectResult.strokes);
+    if (strokes.isEmpty) {
+      // English only: this fork doesn't regenerate translations.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select some handwriting first.')),
+      );
+      return;
+    }
+
+    final pageIndex = select.selectResult.pageIndex;
+    final bounds = SelectionImage.boundsOf(strokes);
+    final png = await SelectionImage.render(strokes);
+    await stows.anthropicApiKey.waitUntilRead();
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => MathSolverDialog(
+        selectionPng: png,
+        apiKey: stows.anthropicApiKey.value,
+        onApiKeyChanged: (key) => stows.anthropicApiKey.value = key,
+        createSolver: (apiKey) => ClaudeMathSolver(apiKey: apiKey),
+        onInsert: (png, size) =>
+            _insertMathResult(pageIndex, bounds, png, size),
+      ),
+    );
+  }
+
+  /// Adds the rendered maths result [png] to the page, to the right of the
+  /// handwriting at [bounds], or below it if there is no room.
+  void _insertMathResult(int pageIndex, Rect bounds, Uint8List png, Size size) {
+    if (coreInfo.readOnly) return;
+    final page = coreInfo.pages[pageIndex];
+
+    // about as tall as the handwriting it answers
+    final scale = (bounds.height / size.height).clamp(0.6, 2.0);
+    final dstSize = size * scale;
+    const gap = 24.0;
+    var topLeft = Offset(bounds.right + gap, bounds.top);
+    if (topLeft.dx + dstSize.width > page.size.width) {
+      topLeft = Offset(bounds.left, bounds.bottom + gap);
+    }
+    topLeft = Offset(
+      topLeft.dx.clamp(0, max(0, page.size.width - dstSize.width)),
+      topLeft.dy.clamp(0, max(0, page.size.height - dstSize.height)),
+    );
+
+    final image = PngEditorImage(
+      id: coreInfo.nextImageId++,
+      extension: '.png',
+      imageProvider: MemoryImage(png),
+      pageIndex: pageIndex,
+      pageSize: page.size,
+      onMoveImage: onMoveImage,
+      onDeleteImage: onDeleteImage,
+      onMiscChange: autosaveAfterDelay,
+      onLoad: () => setState(() {}),
+      assetCache: coreInfo.assetCache,
+      dstRect: topLeft & dstSize,
+    );
+
+    setState(() {
+      history.recordChange(
+        EditorHistoryItem(
+          type: .draw,
+          pageIndex: pageIndex,
+          strokes: [],
+          images: [image],
+        ),
+      );
+      page.images.add(image);
+    });
+    autosaveAfterDelay();
+  }
+
   void setSelectionLineType(LineType lineType) {
     final select = currentTool as Select;
     if (!select.doneSelecting) return;
@@ -1956,6 +2040,7 @@ class EditorState extends State<Editor> {
             });
           },
           setSelectionLineType: setSelectionLineType,
+          solveSelection: solveSelection,
           deleteSelection: () {
             final select = currentTool as Select;
             if (!select.doneSelecting) {
