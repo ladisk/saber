@@ -66,3 +66,6 @@ coverage/
 
 # temp files for fdroid pubspec.lock
 /tmpfdroid/
+
+# Golden test diff output
+test/failures/
