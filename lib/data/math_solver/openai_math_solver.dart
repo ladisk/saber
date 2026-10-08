@@ -18,14 +18,31 @@ class OpenAiMathSolver implements MathSolver {
     required this.apiKey,
     required this.baseUrl,
     required this.model,
+    String? solveModel,
+    this.setReasoningEffort = false,
     http.Client? httpClient,
-  }) : _http = httpClient ?? http.Client();
+  }) : solveModel = (solveModel == null || solveModel.trim().isEmpty)
+           ? model
+           : solveModel.trim(),
+       _http = httpClient ?? http.Client();
 
   final String apiKey;
 
   /// The API's base URL, e.g. `https://openrouter.ai/api/v1`.
   final String baseUrl;
+
+  /// The model that reads the handwriting.
   final String model;
+
+  /// The model that solves the confirmed expressions, [model] if not given.
+  final String solveModel;
+
+  /// Whether to send `reasoning_effort`: [recognizeEffort] when reading
+  /// and [solveEffort] when solving. Otherwise each model uses its own
+  /// default, which can make reading slow. Off by default because some
+  /// services reject the field.
+  final bool setReasoningEffort;
+
   final http.Client _http;
 
   static final log = Logger('OpenAiMathSolver');
@@ -34,6 +51,12 @@ class OpenAiMathSolver implements MathSolver {
   static const defaultModel = 'google/gemini-3.8-flash';
 
   static const timeout = Duration(minutes: 3);
+
+  /// Reading is a transcription, so it needs little reasoning.
+  static const recognizeEffort = 'low';
+
+  /// Solving needs some reasoning to get the arithmetic right.
+  static const solveEffort = 'medium';
 
   Uri get endpoint => Uri.parse(
     '${baseUrl.trim().replaceFirst(RegExp(r'/+$'), '')}/chat/completions',
@@ -62,7 +85,7 @@ You may work through the calculation first. End your reply with only this JSON o
 
   @override
   Future<List<String>> recognize(Uint8List png) async {
-    final reply = await _complete([
+    final reply = await _complete(model, recognizeEffort, [
       {'role': 'system', 'content': _recognizeSystem},
       {
         'role': 'user',
@@ -91,7 +114,7 @@ You may work through the calculation first. End your reply with only this JSON o
 
   @override
   Future<List<SolvedExpression>> solve(List<String> expressions) async {
-    final reply = await _complete([
+    final reply = await _complete(solveModel, solveEffort, [
       {'role': 'system', 'content': _solveSystem},
       {
         'role': 'user',
@@ -112,8 +135,12 @@ You may work through the calculation first. End your reply with only this JSON o
     ];
   }
 
-  /// Sends [messages] and returns the text of the reply.
-  Future<String> _complete(List<Map<String, dynamic>> messages) async {
+  /// Sends [messages] to [model] and returns the text of the reply.
+  Future<String> _complete(
+    String model,
+    String effort,
+    List<Map<String, dynamic>> messages,
+  ) async {
     final http.Response response;
     try {
       response = await _http
@@ -123,7 +150,11 @@ You may work through the calculation first. End your reply with only this JSON o
               'content-type': 'application/json',
               'authorization': 'Bearer $apiKey',
             },
-            body: jsonEncode({'model': model, 'messages': messages}),
+            body: jsonEncode({
+              'model': model,
+              'messages': messages,
+              if (setReasoningEffort) 'reasoning_effort': effort,
+            }),
           )
           .timeout(timeout);
     } on TimeoutException {

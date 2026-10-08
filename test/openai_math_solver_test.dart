@@ -11,12 +11,18 @@ void main() {
   setUp(() => requests = []);
 
   /// A solver whose API replies are taken from [replies] in turn.
-  OpenAiMathSolver solver(List<(int, Object)> replies) {
+  OpenAiMathSolver solver(
+    List<(int, Object)> replies, {
+    String? solveModel,
+    bool setReasoningEffort = false,
+  }) {
     var i = 0;
     return OpenAiMathSolver(
       apiKey: 'test-key',
       baseUrl: 'https://example.com/api/v1/',
       model: 'some/model',
+      solveModel: solveModel,
+      setReasoningEffort: setReasoningEffort,
       httpClient: MockClient((request) async {
         requests.add(request);
         final (status, body) = replies[i++];
@@ -56,6 +62,7 @@ void main() {
     expect(request.headers['authorization'], 'Bearer test-key');
     final json = body(request);
     expect(json['model'], 'some/model');
+    expect(json.containsKey('reasoning_effort'), isFalse);
     final content = (json['messages'] as List).last['content'] as List;
     expect(
       content.last['image_url']['url'],
@@ -80,6 +87,33 @@ m = 2 kg, so F = 2 \\cdot 9.81 = 19.62\\,\\mathrm{N} and \\frac{1}{2}.
     expect(results.single.note, isNull);
     final messages = body(requests.single)['messages'] as List;
     expect(messages.last['content'], '1. m = 2\n2. F = m g');
+  });
+
+  test('solving uses its own model and effort when set', () async {
+    final s = solver(
+      [
+        (200, reply('{"expressions": ["1 + 1"]}')),
+        (200, reply('{"results": [{"input": "1 + 1", "result": "2"}]}')),
+      ],
+      solveModel: ' strong/model ',
+      setReasoningEffort: true,
+    );
+    await s.recognize(Uint8List(0));
+    await s.solve(['1 + 1']);
+
+    final [read, solve] = requests.map(body).toList();
+    expect(read['model'], 'some/model');
+    expect(read['reasoning_effort'], OpenAiMathSolver.recognizeEffort);
+    expect(solve['model'], 'strong/model');
+    expect(solve['reasoning_effort'], OpenAiMathSolver.solveEffort);
+  });
+
+  test('an empty solving model falls back to the model', () async {
+    await solver([
+      (200, reply('{"results": []}')),
+    ], solveModel: '  ').solve(['1']);
+
+    expect(body(requests.single)['model'], 'some/model');
   });
 
   test('errors are reported in plain words', () async {

@@ -1479,6 +1479,8 @@ class EditorState extends State<Editor> {
           apiKey: apiKey,
           baseUrl: stows.mathApiBaseUrl.value,
           model: stows.mathModel.value,
+          solveModel: stows.mathSolveModel.value,
+          setReasoningEffort: stows.mathSetReasoningEffort.value,
         ),
         onInsert: (png, size) =>
             _insertMathResult(pageIndex, bounds, png, size),
