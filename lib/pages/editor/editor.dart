@@ -1921,6 +1921,9 @@ class EditorState extends State<Editor> {
       initialPageIndex: coreInfo.initialPageIndex,
       pageBuilder: pageBuilder,
       isTextEditing: () => currentTool == Tool.textEditing,
+      pageOnTop: currentTool is Select
+          ? (currentTool as Select).selectResult.pageIndex
+          : null,
       placeholderPageBuilder: (BuildContext context, int pageIndex) {
         return Canvas(
           path: coreInfo.filePath,

@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
@@ -37,6 +38,7 @@ class CanvasGestureDetector extends StatefulWidget {
     required this.pageBuilder,
     required this.placeholderPageBuilder,
     required this.isTextEditing,
+    this.pageOnTop,
     TransformationController? transformationController,
   }) : _transformationController =
            transformationController ?? TransformationController();
@@ -67,6 +69,10 @@ class CanvasGestureDetector extends StatefulWidget {
   placeholderPageBuilder;
 
   final bool Function() isTextEditing;
+
+  /// The page painted above the others, so a selection being dragged
+  /// off it isn't hidden under the next page.
+  final int? pageOnTop;
 
   late final TransformationController _transformationController;
 
@@ -547,6 +553,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                       placeholderPageBuilder: widget.placeholderPageBuilder,
                       boundingBox: _axisAlignedBoundingBox(viewport),
                       containerWidth: containerBounds.maxWidth,
+                      pageOnTop: widget.pageOnTop,
                     );
                   },
                 );
@@ -620,6 +627,7 @@ class _PagesBuilder extends StatelessWidget {
     required this.placeholderPageBuilder,
     required this.boundingBox,
     required this.containerWidth,
+    required this.pageOnTop,
   });
 
   final List<EditorPage> pages;
@@ -628,9 +636,11 @@ class _PagesBuilder extends StatelessWidget {
   placeholderPageBuilder;
   final Rect boundingBox;
   final double containerWidth;
+  final int? pageOnTop;
 
   @override
   Widget build(BuildContext context) {
+    int? childOnTop;
     final List<Widget> children = [
       const SizedBox.square(dimension: Editor.gapBetweenPages),
       const SizedBox.square(dimension: Editor.gapBetweenPages),
@@ -652,6 +662,7 @@ class _PagesBuilder extends StatelessWidget {
       final shouldRender = isFocused || isInViewport;
 
       page.isRendered = shouldRender;
+      if (pageIndex == pageOnTop) childOnTop = children.length;
       children.add(
         shouldRender
             ? pageBuilder(context, pageIndex)
@@ -664,7 +675,79 @@ class _PagesBuilder extends StatelessWidget {
     }
 
     children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
-    return Column(children: children);
+    return _ColumnWithChildOnTop(childOnTop: childOnTop, children: children);
+  }
+}
+
+/// A [Column] that paints the child at [childOnTop] after the others.
+class _ColumnWithChildOnTop extends Column {
+  const new({required this.childOnTop, super.children});
+
+  final int? childOnTop;
+
+  @override
+  RenderFlex createRenderObject(BuildContext context) =>
+      _RenderFlexWithChildOnTop(
+        childOnTop: childOnTop,
+        direction: direction,
+        mainAxisAlignment: mainAxisAlignment,
+        mainAxisSize: mainAxisSize,
+        crossAxisAlignment: crossAxisAlignment,
+        textDirection: getEffectiveTextDirection(context),
+        verticalDirection: verticalDirection,
+        textBaseline: textBaseline,
+        clipBehavior: clipBehavior,
+        spacing: spacing,
+      );
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderFlexWithChildOnTop renderObject,
+  ) {
+    super.updateRenderObject(context, renderObject);
+    renderObject.childOnTop = childOnTop;
+  }
+}
+
+class _RenderFlexWithChildOnTop extends RenderFlex {
+  new({
+    required this._childOnTop,
+    super.direction,
+    super.mainAxisAlignment,
+    super.mainAxisSize,
+    super.crossAxisAlignment,
+    super.textDirection,
+    super.verticalDirection,
+    super.textBaseline,
+    super.clipBehavior,
+    super.spacing,
+  });
+
+  int? _childOnTop;
+  set childOnTop(int? value) {
+    if (value == _childOnTop) return;
+    _childOnTop = value;
+    markNeedsPaint();
+  }
+
+  @override
+  void defaultPaint(PaintingContext context, Offset offset) {
+    RenderBox? onTop;
+    var index = 0;
+    for (var child = firstChild; child != null; child = childAfter(child)) {
+      if (index++ == _childOnTop) {
+        onTop = child;
+      } else {
+        _paintChild(context, offset, child);
+      }
+    }
+    if (onTop != null) _paintChild(context, offset, onTop);
+  }
+
+  void _paintChild(PaintingContext context, Offset offset, RenderBox child) {
+    final parentData = child.parentData! as FlexParentData;
+    context.paintChild(child, parentData.offset + offset);
   }
 }
 
