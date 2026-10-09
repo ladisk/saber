@@ -93,6 +93,20 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// The model used to solve handwritten maths, [mathModel] if empty.
+  final mathSolveModel = PlainStow(
+    'mathSolveModel',
+    '',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether Solve maths sets the reasoning effort for each step.
+  final mathSetReasoningEffort = PlainStow(
+    'mathSetReasoningEffort',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final key = SecureStow('key', '', volatile: !_isOnMainIsolate);
   final iv = SecureStow('iv', '', volatile: !_isOnMainIsolate);
 

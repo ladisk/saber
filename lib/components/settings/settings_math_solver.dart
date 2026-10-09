@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:saber/components/settings/settings_button.dart';
+import 'package:saber/components/theming/adaptive_switch_list_tile.dart';
 import 'package:saber/data/math_solver/openai_math_solver.dart';
 import 'package:saber/data/prefs.dart';
 
-/// Sets the service, model and API key used by Solve maths.
+/// Sets the service, models and API key used by Solve maths.
 ///
 /// English only: this fork doesn't regenerate translations.
 class SettingsMathSolver extends StatelessWidget {
@@ -12,12 +13,16 @@ class SettingsMathSolver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([stows.mathApiKey, stows.mathModel]),
+      listenable: Listenable.merge([
+        stows.mathApiKey,
+        stows.mathModel,
+        stows.mathSolveModel,
+      ]),
       builder: (context, _) => SettingsButton(
         title: 'Maths solver',
         subtitle: stows.mathApiKey.value.isEmpty
             ? 'No API key set. Used by Solve maths in the selection bar.'
-            : '${stows.mathModel.value}. '
+            : '${_models()}. '
                   'Used by Solve maths in the selection bar.',
         icon: Icons.functions,
         onPressed: () => showDialog(
@@ -26,6 +31,14 @@ class SettingsMathSolver extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _models() {
+    final model = stows.mathModel.value;
+    final solveModel = stows.mathSolveModel.value;
+    return solveModel.isEmpty || solveModel == model
+        ? model
+        : '$model, solving with $solveModel';
   }
 }
 
@@ -40,12 +53,15 @@ class _MathSolverSettingsDialog extends StatefulWidget {
 class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
   final _baseUrl = TextEditingController(text: stows.mathApiBaseUrl.value);
   final _model = TextEditingController(text: stows.mathModel.value);
+  final _solveModel = TextEditingController(text: stows.mathSolveModel.value);
+  var _setReasoningEffort = stows.mathSetReasoningEffort.value;
   final _key = TextEditingController(text: stows.mathApiKey.value);
 
   @override
   void dispose() {
     _baseUrl.dispose();
     _model.dispose();
+    _solveModel.dispose();
     _key.dispose();
     super.dispose();
   }
@@ -61,6 +77,8 @@ class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
       _model.text,
       OpenAiMathSolver.defaultModel,
     );
+    stows.mathSolveModel.value = _solveModel.text.trim();
+    stows.mathSetReasoningEffort.value = _setReasoningEffort;
     stows.mathApiKey.value = _key.text.trim();
     Navigator.of(context).pop();
   }
@@ -95,6 +113,26 @@ class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Model',
                   hintText: OpenAiMathSolver.defaultModel,
+                  helperText: 'Reads the handwriting. Use a fast model.',
+                ),
+              ),
+              TextField(
+                controller: _solveModel,
+                decoration: const InputDecoration(
+                  labelText: 'Model for solving',
+                  hintText: 'Same as above',
+                  helperText: 'Optional, e.g. a stronger model.',
+                ),
+              ),
+              AdaptiveSwitchListTile(
+                value: _setReasoningEffort,
+                onChanged: (value) =>
+                    setState(() => _setReasoningEffort = value),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Set reasoning effort'),
+                subtitle: const Text(
+                  'Low for reading, medium for solving. '
+                  'Usually faster. Turn off if the service rejects it.',
                 ),
               ),
               TextField(
