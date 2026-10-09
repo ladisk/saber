@@ -278,8 +278,9 @@ class Select extends Tool {
   ///
   /// Returns null if the selection ended up unrotated,
   /// putting any rectangles back into [pageStrokes].
-  ({double angle, Offset center, Map<Stroke, Stroke> rectangles})?
-  onRotateEnd(List<Stroke> pageStrokes) {
+  ({double angle, Offset center, Map<Stroke, Stroke> rectangles})? onRotateEnd(
+    List<Stroke> pageStrokes,
+  ) {
     final result = (
       angle: rotateAngle,
       center: rotateCenter!,

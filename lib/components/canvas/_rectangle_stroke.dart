@@ -167,16 +167,16 @@ class RectangleStroke extends Stroke {
   Stroke toPolygonStroke() {
     final polygon = getPolygon(quality: .high);
     return Stroke(
-      color: color,
-      pressureEnabled: pressureEnabled,
-      // streamline would round the corners
-      options: options.copyWith(isComplete: true, streamline: 0)
-        ..start.taperEnabled = false
-        ..end.taperEnabled = false,
-      pageIndex: pageIndex,
-      page: page,
-      toolId: toolId,
-    )
+        color: color,
+        pressureEnabled: pressureEnabled,
+        // streamline would round the corners
+        options: options.copyWith(isComplete: true, streamline: 0)
+          ..start.taperEnabled = false
+          ..end.taperEnabled = false,
+        pageIndex: pageIndex,
+        page: page,
+        toolId: toolId,
+      )
       ..addPoints([...polygon, polygon.first])
       ..lineType = lineType;
   }
