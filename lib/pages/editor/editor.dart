@@ -1282,6 +1282,17 @@ class EditorState extends State<Editor> {
     Colors.orange,
   ];
 
+  /// The shapes in the palette's dropdown; lines and arrows have
+  /// their own buttons.
+  static const _paletteDropdownShapes = [
+    ShapeKind.doubleArrow,
+    ShapeKind.rectangle,
+    ShapeKind.circle,
+  ];
+
+  /// The dropdown shape used last, shown on the dropdown's button.
+  var _paletteDropdownShape = ShapeKind.rectangle;
+
   /// The stroke sizes on the tool palette, with how thick to draw each icon.
   static const _paletteSizes = <(double, double)>[(1, 1.5), (3, 3.5), (15, 8)];
 
@@ -1315,13 +1326,19 @@ class EditorState extends State<Editor> {
         ? select.getCommonLineType()
         : null;
 
-    const paletteShapes = [
-      ShapeKind.line,
-      ShapeKind.arrow,
-      ShapeKind.doubleArrow,
-      ShapeKind.rectangle,
-      ShapeKind.circle,
-    ];
+    const directShapes = [ShapeKind.line, ShapeKind.arrow];
+    if (_paletteDropdownShapes.contains(shapeTool.kind)) {
+      _paletteDropdownShape = shapeTool.kind;
+    }
+    ToolPaletteItem shapeItem(ShapeKind kind) => ToolPaletteItem(
+      icon: Icon(kind.icon),
+      tooltip: kind.label,
+      selected: currentTool == shapeTool && shapeTool.kind == kind,
+      onSelected: () {
+        shapeTool.kind = kind;
+        setTool(shapeTool);
+      },
+    );
     final currentSize = switch (currentTool) {
       final Pen pen => pen.options.size,
       _ => null,
@@ -1395,23 +1412,13 @@ class EditorState extends State<Editor> {
         ]),
       ],
       [
+        ToolPaletteGroup([for (final kind in directShapes) shapeItem(kind)]),
         ToolPaletteGroup(
           collapsible: true,
-          current: paletteShapes.indexOf(shapeTool.kind),
-          [
-            for (final kind in paletteShapes)
-              ToolPaletteItem(
-                icon: Icon(kind.icon),
-                tooltip: kind.label,
-                selected: currentTool == shapeTool && shapeTool.kind == kind,
-                onSelected: () {
-                  shapeTool.kind = kind;
-                  setTool(shapeTool);
-                },
-              ),
-          ],
+          current: _paletteDropdownShapes.indexOf(_paletteDropdownShape),
+          [for (final kind in _paletteDropdownShapes) shapeItem(kind)],
         ),
-        ToolPaletteGroup([
+        ToolPaletteGroup(divided: true, [
           // centerline is left to the shapes options, to keep this short
           for (final lineType in LineType.values)
             if (lineType != .centerline)
@@ -1430,26 +1437,31 @@ class EditorState extends State<Editor> {
                 },
               ),
         ]),
-        ToolPaletteGroup(collapsible: true, current: currentSizeIndex, [
-          for (final (size, iconThickness) in _paletteSizes)
-            ToolPaletteItem(
-              icon: Container(
-                width: 20,
-                height: iconThickness,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface,
-                  borderRadius: .circular(iconThickness / 2),
+        ToolPaletteGroup(
+          collapsible: true,
+          divided: true,
+          current: currentSizeIndex,
+          [
+            for (final (size, iconThickness) in _paletteSizes)
+              ToolPaletteItem(
+                icon: Container(
+                  width: 20,
+                  height: iconThickness,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface,
+                    borderRadius: .circular(iconThickness / 2),
+                  ),
                 ),
+                tooltip: 'Size ${size.round()}',
+                selected: size == currentSize,
+                onSelected: () {
+                  if (currentTool case final Pen pen) {
+                    setState(() => pen.options.size = size);
+                  }
+                },
               ),
-              tooltip: 'Size ${size.round()}',
-              selected: size == currentSize,
-              onSelected: () {
-                if (currentTool case final Pen pen) {
-                  setState(() => pen.options.size = size);
-                }
-              },
-            ),
-        ]),
+          ],
+        ),
       ],
     ];
   }

@@ -22,14 +22,21 @@ class ToolPaletteItem {
 
 /// A run of related buttons on the [ToolPalette].
 class ToolPaletteGroup {
-  const new(this.items, {this.collapsible = false, int? current})
-    : current = current != null && current >= 0 ? current : null;
+  const new(
+    this.items, {
+    this.collapsible = false,
+    this.divided = false,
+    int? current,
+  }) : current = current != null && current >= 0 ? current : null;
 
   final List<ToolPaletteItem> items;
 
   /// Whether the group shows only its [current] button,
   /// with the others in a dropdown under it.
   final bool collapsible;
+
+  /// Whether a line separates this group from the one before it.
+  final bool divided;
 
   /// The index in [items] of the current choice, if any.
   final int? current;
@@ -153,7 +160,14 @@ class _ToolPaletteState extends State<ToolPalette> {
                                 dimension: ToolPalette._gripSize,
                               ),
                             for (final (groupIndex, group) in row.indexed) ...[
-                              if (groupIndex > 0)
+                              if (groupIndex > 0 && group.divided)
+                                Container(
+                                  width: vertical ? 20 : 1,
+                                  height: vertical ? 1 : 20,
+                                  margin: const .all(5),
+                                  color: colorScheme.outlineVariant,
+                                )
+                              else if (groupIndex > 0)
                                 const SizedBox.square(dimension: 6),
                               if (group.collapsible)
                                 _Dropdown(group: group, vertical: vertical)
