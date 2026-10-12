@@ -106,7 +106,7 @@ class _ToolbarState extends State<Toolbar> {
   @override
   void initState() {
     _assignKeybindings();
-    PencilDoubleTap.addListener(toggleEraser);
+    PencilDoubleTap.addListener(_onPencilDoubleTap);
 
     DynamicMaterialApp.addFullscreenListener(_setState);
 
@@ -172,6 +172,13 @@ class _ToolbarState extends State<Toolbar> {
   void toggleEraser() {
     toolOptionsType.value = .hide;
     widget.setTool(Eraser()); // this toggles eraser
+  }
+
+  void _onPencilDoubleTap() {
+    toolOptionsType.value = .hide;
+    widget.setTool(
+      Eraser(singleUse: stows.pencilDoubleTapErasesOnce.value),
+    ); // this toggles eraser
   }
 
   void toggleColorOptions() {
@@ -634,7 +641,7 @@ class _ToolbarState extends State<Toolbar> {
     DynamicMaterialApp.setFullscreen(false, updateSystem: true);
 
     _removeKeybindings();
-    PencilDoubleTap.removeListener(toggleEraser);
+    PencilDoubleTap.removeListener(_onPencilDoubleTap);
     super.dispose();
   }
 }

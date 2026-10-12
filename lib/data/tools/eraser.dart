@@ -15,7 +15,10 @@ class Eraser extends Tool {
 
   List<Stroke> _erased = [];
 
-  new({this.size = 10});
+  /// Whether to go back to the previous tool after one use.
+  final bool singleUse;
+
+  new({this.size = 10, this.singleUse = false});
 
   @override
   ToolId get toolId => .eraser;

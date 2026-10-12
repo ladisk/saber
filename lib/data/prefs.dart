@@ -226,6 +226,23 @@ class Stows {
     false,
     volatile: !_isOnMainIsolate,
   );
+
+  /// Whether an Apple Pencil double tap gives the eraser for one use,
+  /// instead of until the next double tap.
+  final pencilDoubleTapErasesOnce = PlainStow(
+    'pencilDoubleTapErasesOnce',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether holding still while drawing a shape snaps lines to 15° steps
+  /// and rectangles to squares. Lines near horizontal or vertical
+  /// snap either way.
+  final shapeSnapFine = PlainStow(
+    'shapeSnapFine',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
   final hideFingerDrawingToggle = PlainStow(
     'hideFingerDrawingToggle',
     false,

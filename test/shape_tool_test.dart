@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/data/flavor_config.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/shape_tool.dart';
 import 'package:sbn/has_size.dart';
@@ -96,6 +97,41 @@ void main() {
         (tool.onDragEnd()! as RectangleStroke).rect,
         const Rect.fromLTRB(0, 40, 60, 100),
       );
+    });
+
+    group('without fine snapping', () {
+      setUp(() => stows.shapeSnapFine.value = false);
+      tearDown(() => stows.shapeSnapFine.value = true);
+
+      test('a nearly horizontal line snaps to horizontal', () {
+        tool
+          ..kind = .line
+          ..startAt(const Offset(10, 10), page, 0)
+          ..onDragUpdate(const Offset(110, 20), null)
+          ..snap();
+        final bounds = tool.onDragEnd()!.centerlinePath.getBounds();
+        expect(bounds.height, moreOrLessEquals(0));
+      });
+
+      test('other lines and rectangles are left alone', () {
+        tool
+          ..kind = .line
+          ..startAt(const Offset(10, 10), page, 0)
+          ..onDragUpdate(const Offset(110, 90), null)
+          ..snap();
+        final bounds = tool.onDragEnd()!.centerlinePath.getBounds();
+        expect(bounds.height, moreOrLessEquals(80));
+
+        tool
+          ..kind = .rectangle
+          ..startAt(.zero, page, 0)
+          ..onDragUpdate(const Offset(90, 30), null)
+          ..snap();
+        expect(
+          (tool.onDragEnd()! as RectangleStroke).rect,
+          const Rect.fromLTRB(0, 0, 90, 30),
+        );
+      });
     });
 
     test('draws a sine wave that fills the dragged rectangle', () {

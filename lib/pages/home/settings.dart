@@ -367,6 +367,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: FontAwesomeIcons.eraser,
                   pref: stows.disableEraserAfterUse,
                 ),
+                // English only: this fork doesn't regenerate translations.
+                SettingsSwitch(
+                  title: 'Pencil double tap erases once',
+                  subtitle:
+                      'After an Apple Pencil double tap, go back to '
+                      'the previous tool once you have erased something',
+                  icon: FontAwesomeIcons.eraser,
+                  pref: stows.pencilDoubleTapErasesOnce,
+                ),
+                SettingsSwitch(
+                  title: 'Snap shapes to 15° and squares',
+                  subtitle:
+                      'When you hold still while drawing a shape. Lines '
+                      'near horizontal or vertical snap either way',
+                  icon: Icons.straighten,
+                  pref: stows.shapeSnapFine,
+                ),
                 ValueListenableBuilder(
                   valueListenable: stows.hideFingerDrawingToggle,
                   builder: (context, _, _) {

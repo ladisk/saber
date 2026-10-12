@@ -46,7 +46,9 @@ enum ShapeKind {
 /// and a sine wave fills the rectangle between them with [sinePeriods].
 ///
 /// Holding still for [holdDuration] snaps the shape for the rest of the
-/// drag: lines to [snapAngle] steps, rectangles to squares.
+/// drag: lines to [snapAngle] steps and rectangles to squares, or with
+/// [Stows.shapeSnapFine] off, only lines within [snapAngle] of
+/// horizontal or vertical.
 ///
 /// Unlike [ShapePen], nothing is recognised from freehand drawing.
 /// Strokes are saved as shape pen strokes,
@@ -228,7 +230,10 @@ class ShapeTool extends Pen {
   /// [snapAngle] and rectangles become squares, keeping their size.
   Offset _snappedEnd(Stroke stroke) {
     final delta = _end - _start;
+    final fine = stows.shapeSnapFine.value;
     switch (stroke) {
+      case RectangleStroke() when !fine:
+        return _end;
       case RectangleStroke():
         final side = max(delta.dx.abs(), delta.dy.abs());
         return _start +
@@ -240,7 +245,10 @@ class ShapeTool extends Pen {
       case Stroke() when kind == .sine:
         return _end;
       case Stroke():
-        final angle = (delta.direction / snapAngle).round() * snapAngle;
+        final step = fine ? snapAngle : pi / 2;
+        final angle = (delta.direction / step).round() * step;
+        // without fine snapping, only lines close to an axis snap
+        if ((delta.direction - angle).abs() > snapAngle) return _end;
         return _start + Offset.fromDirection(angle, delta.distance);
     }
   }
