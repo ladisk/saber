@@ -1412,21 +1412,23 @@ class EditorState extends State<Editor> {
           ],
         ),
         ToolPaletteGroup([
+          // centerline is left to the shapes options, to keep this short
           for (final lineType in LineType.values)
-            ToolPaletteItem(
-              icon: Icon(lineType.icon),
-              tooltip: lineType.label,
-              selected: usingSelection
-                  ? selectionLineType == lineType
-                  : shapeTool.lineType == lineType,
-              onSelected: () {
-                if (usingSelection) {
-                  setSelectionLineType(lineType);
-                } else {
-                  setState(() => shapeTool.lineType = lineType);
-                }
-              },
-            ),
+            if (lineType != .centerline)
+              ToolPaletteItem(
+                icon: Icon(lineType.icon),
+                tooltip: lineType.label,
+                selected: usingSelection
+                    ? selectionLineType == lineType
+                    : shapeTool.lineType == lineType,
+                onSelected: () {
+                  if (usingSelection) {
+                    setSelectionLineType(lineType);
+                  } else {
+                    setState(() => shapeTool.lineType = lineType);
+                  }
+                },
+              ),
         ]),
         ToolPaletteGroup(collapsible: true, current: currentSizeIndex, [
           for (final (size, iconThickness) in _paletteSizes)
