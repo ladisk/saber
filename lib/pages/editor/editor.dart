@@ -1586,6 +1586,9 @@ class EditorState extends State<Editor> {
   }
 
   void setColor(Color color) {
+    // picking a color while erasing means the user wants to write
+    if (currentTool is Eraser) setTool(Pen.currentPen);
+
     setState(() {
       updateColorBar(color);
 
