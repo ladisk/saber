@@ -86,8 +86,8 @@ void main() {
 
     final [shaftStart, shaftEnd] = Arrowheads.end.shaft(start, end, 15);
     expect(shaftStart, start);
-    // inside the 45 long head, but not past its base
-    expect(shaftEnd.dx, inExclusiveRange(200 - 45, 200 - 15 / 2));
+    // inside the 75 long head, but not past its base
+    expect(shaftEnd.dx, inExclusiveRange(200 - 75, 200 - 15 / 2));
 
     final both = Arrowheads.both.shaft(start, end, 15);
     expect(both.first.dx, greaterThan(0));

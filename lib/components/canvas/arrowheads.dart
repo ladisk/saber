@@ -12,7 +12,7 @@ enum Arrowheads {
 
   static Arrowheads fromJson(Object? name) => values.asNameMap()[name] ?? .none;
 
-  static double _headLength(double strokeSize) => max(strokeSize * 3, 10.0);
+  static double _headLength(double strokeSize) => max(strokeSize * 5, 16.0);
 
   /// How far into a head its line stops: far enough that the line's
   /// square end is hidden, as the head is wider than the line there.
