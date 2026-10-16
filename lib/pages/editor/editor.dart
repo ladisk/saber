@@ -1306,6 +1306,19 @@ class EditorState extends State<Editor> {
         : Pen.ballpointPen(),
   );
 
+  /// A palette color is for writing, so it picks the pen,
+  /// unless it can recolor the shape tool or a selection.
+  void pickPaletteColor(Color color) {
+    final tool = currentTool;
+    final keepTool =
+        tool is ShapeTool ||
+        (tool is Select &&
+            tool.doneSelecting &&
+            tool.selectResult.strokes.isNotEmpty);
+    if (!keepTool) _pickBallpointPen();
+    setColor(color);
+  }
+
   /// The floating tool palette: rows of button groups.
   ///
   /// The first row has the tools and colors,
@@ -1407,7 +1420,7 @@ class EditorState extends State<Editor> {
               ),
               tooltip: 'Color',
               selected: color.toARGB32() == currentColor,
-              onSelected: () => setColor(color),
+              onSelected: () => pickPaletteColor(color),
             ),
         ]),
       ],
