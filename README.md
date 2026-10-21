@@ -19,6 +19,7 @@
 > - The pen and the Shapes tool share one color.
 > - An optional LADISK logo in the bottom left corner of the editor, switched on and off from the ⋮ menu. It stays in place while the page moves and does not block writing.
 > - Solve maths from the selection bar: handwritten expressions, equations and units are read as LaTeX by an AI model, checked and edited by you, then solved and inserted next to the handwriting. Works with OpenRouter or any OpenAI-compatible service (Settings > Editor > Maths solver), with your own API key; the selection is sent to that service. The model works out the results itself, so check them.
+> - Import OneNote notebooks with Import note: a section (`.one`), an exported notebook (`.onepkg`) or a notebook downloaded from OneDrive or SharePoint (`.zip`). Each OneNote page becomes a note in a folder named after its section, with its handwriting and images; typed text is not imported. The files are read with [onenote_parser](https://github.com/msiemens/onenote.rs) (MPL-2.0) on the device.
 >
 > **Downloads:** Linux and iPad builds are on [this fork's releases page](https://github.com/ladisk/saber/releases/latest). The iPad build is unsigned; see [IPAD.md](IPAD.md) for installing it with SideStore. The store and download badges below are for the official app, which does not have these changes.
 
