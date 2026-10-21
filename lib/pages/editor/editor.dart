@@ -1177,20 +1177,30 @@ class EditorState extends State<Editor> {
       coreInfo.assetCache.allowRemovingAssets = true;
     }
     try {
+      final assetPaths = [
+        for (int i = 0; i < assets.length; ++i) '$filePath.$i',
+      ];
       await Future.wait([
-        FileManager.writeFile(filePath, bson, awaitWrite: true),
+        FileManager.writeFile(
+          filePath,
+          bson,
+          awaitWrite: true,
+          alsoUpload: false,
+        ),
         for (int i = 0; i < assets.length; ++i)
           assets
               .getBytes(i)
               .then(
                 (bytes) => FileManager.writeFile(
-                  '$filePath.$i',
+                  assetPaths[i],
                   bytes,
                   awaitWrite: true,
+                  alsoUpload: false,
                 ),
               ),
         FileManager.removeUnusedAssets(filePath, numAssets: assets.length),
       ]);
+      unawaited(uploadNoteAfterAssets(filePath, assetPaths));
       savingState.value = .saved;
       history.markLastChangeAsSaved();
     } catch (e, st) {

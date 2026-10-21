@@ -5,6 +5,7 @@ import 'package:abstract_sync/abstract_sync.dart';
 import 'package:collection/collection.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 import 'package:logging/logging.dart';
 import 'package:nextcloud/nextcloud.dart';
 import 'package:nextcloud/webdav.dart';
@@ -58,7 +59,7 @@ class const SaberSyncInterface()
           break;
       }
     }
-    return syncFiles;
+    return notesLast(syncFiles);
   }
 
   @override
@@ -100,7 +101,7 @@ class const SaberSyncInterface()
             return syncFile;
         }
       }),
-    ).then((list) => list.nonNulls.toList());
+    ).then((list) => notesLast(list.nonNulls));
 
     // Prioritize note.sbn2.p over note.sbn2 (so the preview is updated first)
     final previewSyncFiles = changedFiles
@@ -131,6 +132,23 @@ class const SaberSyncInterface()
 
     return changedFiles;
   }
+
+  /// Sorts [files] so each note comes after its images,
+  /// keeping the order otherwise.
+  ///
+  /// A note that arrives before its images shows them as missing.
+  @visibleForTesting
+  static List<SaberSyncFile> notesLast(Iterable<SaberSyncFile> files) => [
+    ...files.whereNot(_isNote),
+    ...files.where(_isNote),
+  ];
+
+  static bool _isNote(SaberSyncFile file) =>
+      file.localFile.path.endsWith(Editor.extension);
+
+  /// Whether [path] is an image or other asset of a note, e.g. `note.sbn2.0`.
+  static bool isAsset(String path) => _assetPattern.hasMatch(path);
+  static final _assetPattern = RegExp(r'\.sbn2\.\d+$');
 
   @override
   Future<SaberSyncFile> getSyncFileFromLocalFile(File localFile) async {
@@ -235,14 +253,25 @@ class const SaberSyncInterface()
       decryptedData.isNotEmpty,
       'Decrypted data is empty but encryptedBytes.length is ${encryptedBytes.length}',
     );
+    final isAsset = SaberSyncInterface.isAsset(file.localFile.path);
     await FileManager.writeFile(
       file.relativeLocalPath,
       decryptedData,
-      awaitWrite: awaitWrite,
+      awaitWrite: awaitWrite || isAsset,
       alsoUpload: false,
       // Local file should have the same last modified date as remote
       lastModified: file.remoteFile?.lastModified,
     );
+    // Images are cached by path, so drop the old one
+    if (isAsset) _evictImage(file.localFile);
+  }
+
+  static void _evictImage(File file) {
+    try {
+      PaintingBinding.instance.imageCache.evict(FileImage(file));
+    } on FlutterError {
+      // no image cache, e.g. in a background sync
+    }
   }
 
   @override
@@ -586,6 +615,35 @@ class SaberSyncFile extends AbstractSyncFile<File, WebDavFile> {
 
   @override
   int get hashCode => localFile.path.hashCode;
+}
+
+/// Queues a note's [assets] for upload, then the note itself,
+/// so another device never gets a note whose images are not uploaded yet.
+Future<void> uploadNoteAfterAssets(
+  String notePath,
+  Iterable<String> assets,
+) async {
+  if (!stows.loggedIn) return;
+  final uploader = syncer.uploader;
+
+  for (final asset in assets) {
+    await uploader.enqueueRel(asset);
+  }
+
+  final note = await SaberSyncFile.relative(notePath);
+  if (uploader.isPending(note)) {
+    if (uploader.isTransferring && uploader.pending.first == note) {
+      // This upload may have read the note before the latest save,
+      // so upload it again when it is done
+      await uploader.transferStream
+          .firstWhere((file) => file == note)
+          .timeout(const Duration(minutes: 2), onTimeout: () => note);
+    } else {
+      // Move it behind its assets
+      uploader.dequeue(syncFile: note);
+    }
+  }
+  await uploader.enqueue(syncFile: note);
 }
 
 extension SaberSyncerComponent on SyncerComponent {
