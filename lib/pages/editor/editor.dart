@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math' show max;
 
 import 'package:collapsible/collapsible.dart';
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -1112,6 +1113,29 @@ class EditorState extends State<Editor> {
     syncer.downloader.bringToFront(syncFile);
   }
 
+  /// Writes an image or other asset to [path],
+  /// unless the file already holds [bytes].
+  ///
+  /// Rewriting unchanged images on every save would upload them again
+  /// and make other devices download them again.
+  /// Returns whether the file was written.
+  @visibleForTesting
+  static Future<bool> writeAssetIfChanged(String path, List<int> bytes) async {
+    final file = FileManager.getFile(path);
+    if (file.existsSync() &&
+        file.lengthSync() == bytes.length &&
+        const ListEquality<int>().equals(await file.readAsBytes(), bytes)) {
+      return false;
+    }
+    await FileManager.writeFile(
+      path,
+      bytes,
+      awaitWrite: true,
+      alsoUpload: false,
+    );
+    return true;
+  }
+
   void autosaveAfterDelay() {
     if (history.isCurrentStateSaved) return cancelAutosaveAndMarkSaved();
 
@@ -1177,9 +1201,7 @@ class EditorState extends State<Editor> {
       coreInfo.assetCache.allowRemovingAssets = true;
     }
     try {
-      final assetPaths = [
-        for (int i = 0; i < assets.length; ++i) '$filePath.$i',
-      ];
+      final changedAssets = <String>[];
       await Future.wait([
         FileManager.writeFile(
           filePath,
@@ -1188,19 +1210,15 @@ class EditorState extends State<Editor> {
           alsoUpload: false,
         ),
         for (int i = 0; i < assets.length; ++i)
-          assets
-              .getBytes(i)
-              .then(
-                (bytes) => FileManager.writeFile(
-                  assetPaths[i],
-                  bytes,
-                  awaitWrite: true,
-                  alsoUpload: false,
-                ),
-              ),
+          assets.getBytes(i).then((bytes) async {
+            final assetPath = '$filePath.$i';
+            if (await writeAssetIfChanged(assetPath, bytes)) {
+              changedAssets.add(assetPath);
+            }
+          }),
         FileManager.removeUnusedAssets(filePath, numAssets: assets.length),
       ]);
-      unawaited(uploadNoteAfterAssets(filePath, assetPaths));
+      unawaited(uploadNoteAfterAssets(filePath, changedAssets));
       savingState.value = .saved;
       history.markLastChangeAsSaved();
     } catch (e, st) {
