@@ -42,6 +42,7 @@ import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
@@ -1432,6 +1433,12 @@ class EditorState extends State<Editor> {
             selected: currentTool is Select && select.touchMode,
             onSelected: () => _setSelectMode(touchMode: true),
           ),
+          if (!SelectionClipboard.isEmpty)
+            ToolPaletteItem(
+              icon: const Icon(Icons.content_paste),
+              tooltip: 'Paste',
+              onSelected: pasteSelection,
+            ),
         ]),
         ToolPaletteGroup([
           for (final color in _paletteColors)
@@ -1902,6 +1909,116 @@ class EditorState extends State<Editor> {
     return true;
   }
 
+  void deleteSelection() {
+    final select = currentTool as Select;
+    if (!select.doneSelecting) {
+      return;
+    }
+
+    setState(() {
+      final pageIndex = select.selectResult.pageIndex;
+      final page = coreInfo.pages[pageIndex];
+      final strokes = select.selectResult.strokes;
+      final images = select.selectResult.images;
+
+      for (final stroke in strokes) {
+        page.strokes.remove(stroke);
+      }
+      for (final image in images) {
+        page.images.remove(image);
+      }
+
+      select.unselect();
+
+      history.recordChange(
+        EditorHistoryItem(
+          type: .erase,
+          pageIndex: pageIndex,
+          strokes: strokes,
+          images: images,
+        ),
+      );
+      autosaveAfterDelay();
+    });
+  }
+
+  /// Copies the selection, to paste it here or in another note.
+  Future<void> copySelection({bool cut = false}) async {
+    final tool = currentTool;
+    if (tool is! Select || !tool.doneSelecting) return;
+    if (tool.selectResult.isEmpty) return;
+
+    await SelectionClipboard.copy(
+      tool.selectResult,
+      filePath: coreInfo.filePath,
+      cut: cut,
+    );
+    // Replace what's on the system clipboard,
+    // so pasting doesn't bring back an older image
+    unawaited(_writeClipboardText('Saber selection'));
+    if (mounted) setState(() {});
+  }
+
+  Future<void> cutSelection() async {
+    if (coreInfo.readOnly) return;
+    await copySelection(cut: true);
+    if (mounted && !SelectionClipboard.isEmpty) deleteSelection();
+  }
+
+  Future<void> _writeClipboardText(String text) async {
+    final clipboard = SystemClipboard.instance;
+    if (clipboard == null) return;
+    try {
+      await clipboard.write([DataWriterItem()..add(Formats.plainText(text))]);
+    } catch (e) {
+      log.warning('Failed to write to the clipboard: $e');
+    }
+  }
+
+  /// Pastes the copied selection onto the current page and selects it.
+  void pasteSelection() {
+    if (coreInfo.readOnly || SelectionClipboard.isEmpty) return;
+
+    final pageIndex = currentPageIndex;
+    createPage(pageIndex);
+    final page = coreInfo.pages[pageIndex];
+
+    final pasted = SelectionClipboard.paste(
+      filePath: coreInfo.filePath,
+      pageIndex: pageIndex,
+      assetCache: coreInfo.assetCache,
+    );
+    for (final image in pasted.images) {
+      image
+        ..id = coreInfo.nextImageId++
+        ..onMoveImage = onMoveImage
+        ..onDeleteImage = onDeleteImage
+        ..onMiscChange = autosaveAfterDelay;
+    }
+
+    setState(() {
+      page.strokes.addAll(pasted.strokes);
+      page.images.addAll(pasted.images);
+
+      final select = Select.currentSelect;
+      select
+        ..unselect()
+        ..selectResult = pasted
+        ..doneSelecting = true;
+      currentTool = select;
+
+      history.recordChange(
+        EditorHistoryItem(
+          type: .draw,
+          pageIndex: pageIndex,
+          strokes: pasted.strokes,
+          images: pasted.images,
+        ),
+      );
+      autosaveAfterDelay();
+    });
+  }
+
   Future paste() async {
     /// Maps image formats to their file extension.
     const Map<SimpleFileFormat, String> formats = {
@@ -1916,7 +2033,8 @@ class EditorState extends State<Editor> {
     };
 
     final reader = await SystemClipboard.instance?.read();
-    if (reader == null) return;
+    if (reader == null) return pasteSelection();
+    if (!formats.keys.any(reader.canProvide)) return pasteSelection();
 
     final List<_PhotoInfo> photoInfos = [];
     final List<ReadProgress> progresses = [];
@@ -2167,37 +2285,9 @@ class EditorState extends State<Editor> {
           },
           setSelectionLineType: setSelectionLineType,
           solveSelection: solveSelection,
-          deleteSelection: () {
-            final select = currentTool as Select;
-            if (!select.doneSelecting) {
-              return;
-            }
-
-            setState(() {
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              final strokes = select.selectResult.strokes;
-              final images = select.selectResult.images;
-
-              for (final stroke in strokes) {
-                page.strokes.remove(stroke);
-              }
-              for (final image in images) {
-                page.images.remove(image);
-              }
-
-              select.unselect();
-
-              history.recordChange(
-                EditorHistoryItem(
-                  type: .erase,
-                  pageIndex: strokes.first.pageIndex,
-                  strokes: strokes,
-                  images: images,
-                ),
-              );
-              autosaveAfterDelay();
-            });
-          },
+          deleteSelection: deleteSelection,
+          copySelection: copySelection,
+          cutSelection: cutSelection,
           setColor: setColor,
           quillFocus: quillFocus,
           textEditing: currentTool == Tool.textEditing,

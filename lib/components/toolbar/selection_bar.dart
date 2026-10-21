@@ -8,6 +8,8 @@ import 'package:saber/i18n/strings.g.dart';
 class SelectionBar extends StatelessWidget {
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
+  final VoidCallback copySelection;
+  final VoidCallback cutSelection;
   final ValueChanged<Axis> mirrorSelection;
   final ValueChanged<LineType> setLineType;
   final VoidCallback solveSelection;
@@ -16,6 +18,8 @@ class SelectionBar extends StatelessWidget {
     super.key,
     required this.duplicateSelection,
     required this.deleteSelection,
+    required this.copySelection,
+    required this.cutSelection,
     required this.mirrorSelection,
     required this.setLineType,
     required this.solveSelection,
@@ -37,8 +41,35 @@ class SelectionBar extends StatelessWidget {
           ),
           tooltip: t.editor.selectionBar.duplicate,
           icon: const AdaptiveIcon(
+            icon: Icons.control_point_duplicate,
+            cupertinoIcon: CupertinoIcons.plus_square_on_square,
+          ),
+        ),
+        // English only: this fork doesn't regenerate translations.
+        IconButton(
+          onPressed: copySelection,
+          style: TextButton.styleFrom(
+            foregroundColor: ColorScheme.of(context).secondary,
+            backgroundColor: Colors.transparent,
+            shape: const CircleBorder(),
+          ),
+          tooltip: 'Copy',
+          icon: const AdaptiveIcon(
             icon: Icons.content_copy,
-            cupertinoIcon: CupertinoIcons.doc_on_clipboard,
+            cupertinoIcon: CupertinoIcons.doc_on_doc,
+          ),
+        ),
+        IconButton(
+          onPressed: cutSelection,
+          style: TextButton.styleFrom(
+            foregroundColor: ColorScheme.of(context).secondary,
+            backgroundColor: Colors.transparent,
+            shape: const CircleBorder(),
+          ),
+          tooltip: 'Cut',
+          icon: const AdaptiveIcon(
+            icon: Icons.content_cut,
+            cupertinoIcon: CupertinoIcons.scissors,
           ),
         ),
         IconButton(
@@ -54,7 +85,6 @@ class SelectionBar extends StatelessWidget {
             cupertinoIcon: CupertinoIcons.delete,
           ),
         ),
-        // English only: this fork doesn't regenerate translations.
         IconButton(
           onPressed: () => mirrorSelection(.horizontal),
           style: TextButton.styleFrom(

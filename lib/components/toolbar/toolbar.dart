@@ -52,6 +52,8 @@ class Toolbar extends StatefulWidget {
     required this.paste,
     required this.duplicateSelection,
     required this.deleteSelection,
+    required this.copySelection,
+    required this.cutSelection,
     required this.mirrorSelection,
     required this.solveSelection,
     required this.setSelectionLineType,
@@ -83,6 +85,8 @@ class Toolbar extends StatefulWidget {
 
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
+  final VoidCallback copySelection;
+  final VoidCallback cutSelection;
   final ValueChanged<Axis> mirrorSelection;
   final VoidCallback solveSelection;
   final ValueChanged<LineType> setSelectionLineType;
@@ -121,6 +125,7 @@ class _ToolbarState extends State<Toolbar> {
   Keybinding? _ctrlShiftS;
   Keybinding? _f11;
   Keybinding? _ctrlV;
+  Keybinding? _ctrlX;
   void _assignKeybindings() {
     _ctrlF = Keybinding([
       KeyCode.ctrl,
@@ -147,16 +152,38 @@ class _ToolbarState extends State<Toolbar> {
 
     Keybinder.bind(_ctrlF!, widget.toggleFingerDrawing);
     Keybinder.bind(_ctrlE!, toggleEraser);
-    Keybinder.bind(_ctrlC!, toggleColorOptions);
+    Keybinder.bind(_ctrlC!, _copyOrToggleColorOptions);
     Keybinder.bind(_ctrlShiftS!, toggleExportBar);
     Keybinder.bind(_f11!, toggleFullscreen);
     Keybinder.bind(_ctrlV!, widget.paste);
+    _ctrlX = Keybinding([
+      KeyCode.ctrl,
+      KeyCode.from(LogicalKeyboardKey.keyX),
+    ], inclusive: true);
+    Keybinder.bind(_ctrlX!, _cutSelection);
+  }
+
+  bool get _hasSelection =>
+      widget.currentTool is Select && Select.currentSelect.doneSelecting;
+
+  /// Ctrl+C copies a selection, otherwise it shows the color options.
+  void _copyOrToggleColorOptions() {
+    if (_hasSelection) {
+      widget.copySelection();
+    } else {
+      toggleColorOptions();
+    }
+  }
+
+  void _cutSelection() {
+    if (_hasSelection) widget.cutSelection();
   }
 
   void _removeKeybindings() {
     if (_ctrlF != null) Keybinder.remove(_ctrlF!);
     if (_ctrlE != null) Keybinder.remove(_ctrlE!);
     if (_ctrlC != null) Keybinder.remove(_ctrlC!);
+    if (_ctrlX != null) Keybinder.remove(_ctrlX!);
     if (_ctrlShiftS != null) Keybinder.remove(_ctrlShiftS!);
     if (_f11 != null) Keybinder.remove(_f11!);
     if (_ctrlV != null) Keybinder.remove(_ctrlV!);
@@ -272,6 +299,8 @@ class _ToolbarState extends State<Toolbar> {
               .select => SelectionBar(
                 duplicateSelection: widget.duplicateSelection,
                 deleteSelection: widget.deleteSelection,
+                copySelection: widget.copySelection,
+                cutSelection: widget.cutSelection,
                 mirrorSelection: widget.mirrorSelection,
                 solveSelection: widget.solveSelection,
                 setLineType: widget.setSelectionLineType,
