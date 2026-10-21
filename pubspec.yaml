@@ -106,6 +106,9 @@ dependencies:
   onyxsdk_pen:
     path: packages/onyxsdk_pen
 
+  onenote_import:
+    path: packages/onenote_import
+
   screenshot: ^3.0.0
 
   path_drawing: ^1.0.1

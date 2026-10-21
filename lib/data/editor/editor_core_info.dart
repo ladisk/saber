@@ -98,7 +98,6 @@ class EditorCoreInfo {
   bool get isEmpty => pages.every((EditorPage page) => page.isEmpty);
   bool get isNotEmpty => !isEmpty;
 
-  @visibleForTesting
   new({required this.filePath, this.readOnlyReason})
     : nextImageId = 0,
       backgroundPattern = stows.lastBackgroundPattern.value,
