@@ -306,10 +306,37 @@ class const App({super.key}) extends StatefulWidget {
 class _AppState extends State<App> {
   StreamSubscription? _intentDataStreamSubscription;
 
+  /// How often to look for changes while the app is open.
+  static const _syncInterval = Duration(minutes: 5);
+
+  late final AppLifecycleListener _lifecycleListener;
+  Timer? _syncTimer;
+
   @override
   void initState() {
     setupSharingIntent();
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () {
+        _syncNow();
+        _startSyncTimer();
+      },
+      onPause: () => _syncTimer?.cancel(),
+    );
+    _startSyncTimer();
     super.initState();
+  }
+
+  void _startSyncTimer() {
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(_syncInterval, (_) => _syncNow());
+  }
+
+  /// Picks up changes from other devices, which otherwise
+  /// only arrive on app start or a manual sync.
+  void _syncNow() {
+    if (!stows.loggedIn) return;
+    if (!syncer.downloader.isRefreshing) syncer.downloader.refresh();
+    if (!syncer.uploader.isRefreshing) syncer.uploader.refresh();
   }
 
   void setupSharingIntent() {
@@ -341,6 +368,8 @@ class _AppState extends State<App> {
   @override
   void dispose() {
     _intentDataStreamSubscription?.cancel();
+    _lifecycleListener.dispose();
+    _syncTimer?.cancel();
     super.dispose();
   }
 }
