@@ -163,8 +163,14 @@ class OneNoteText {
   new fromJson(Map<String, dynamic> json)
     : x = (json['x'] as num).toDouble(),
       y = (json['y'] as num).toDouble(),
+      width = (json['width'] as num? ?? 0).toDouble(),
       text = json['text'] as String;
 
   final double x, y;
+
+  /// The width of the outline the text is in, or 0 if unknown.
+  final double width;
+
+  /// One paragraph, which may contain line breaks.
   final String text;
 }

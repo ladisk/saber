@@ -16,7 +16,7 @@ import 'package:sbn/tool_id.dart';
 
 import 'utils/test_mock_channel_handlers.dart';
 
-/// Set to a `.one` file with ink, e.g. `Schnelle Notizen.one`
+/// Set to a `.one` file, e.g. `Schnelle Notizen.one`
 /// from the tests of https://github.com/msiemens/onenote.rs.
 final _sample = Platform.environment['ONENOTE_SAMPLE'];
 
@@ -107,6 +107,62 @@ void main() {
       );
     });
 
+    test('puts typed text into the page text', () {
+      final coreInfo = EditorCoreInfo(filePath: '')
+        ..lineHeight = OneNoteLayout.lineHeight;
+      OneNoteLayout.addPage(
+        coreInfo,
+        _page(
+          const [],
+          texts: [
+            _text('First', y: 0),
+            _text('Second\nThird', y: OneNoteLayout.textLineHeight),
+            // Further down the page, after an empty space.
+            _text('Fourth', y: 6 * OneNoteLayout.textLineHeight),
+            _text('Indented', x: 48, y: 7 * OneNoteLayout.textLineHeight),
+          ],
+        ),
+        const {},
+      );
+
+      final page = coreInfo.pages.single;
+      final lines = page.quill.controller.document.toPlainText().split('\n');
+      expect(lines.take(3), ['First', 'Second', 'Third']);
+      final fourth = lines.indexOf('Fourth');
+      expect(fourth, 6, reason: 'keeps the empty space above it');
+      expect(lines[fourth + 1], startsWith(' '));
+      expect(lines[fourth + 1].trim(), 'Indented');
+    });
+
+    test('splits long typed text between pages', () {
+      final coreInfo = EditorCoreInfo(filePath: '')
+        ..lineHeight = OneNoteLayout.lineHeight;
+      OneNoteLayout.addPage(
+        coreInfo,
+        _page(
+          const [],
+          texts: [_text(List.generate(150, (i) => 'Line $i').join('\n'), y: 0)],
+        ),
+        const {},
+      );
+
+      expect(coreInfo.pages.length, greaterThanOrEqualTo(2));
+      final text = coreInfo.pages
+          .map((page) => page.quill.controller.document.toPlainText())
+          .join('\n');
+      for (var i = 0; i < 150; i++) {
+        expect(text, contains('Line $i\n'));
+      }
+      for (final page in coreInfo.pages) {
+        final lines = page.quill.controller.document.toPlainText().split('\n');
+        expect(
+          lines.length * coreInfo.lineHeight,
+          lessThanOrEqualTo(page.size.height),
+          reason: 'the text fits on its page',
+        );
+      }
+    });
+
     test('adds nothing for a page without ink or images', () {
       final coreInfo = EditorCoreInfo(filePath: '');
       OneNoteLayout.addPage(coreInfo, _page(const []), const {});
@@ -157,25 +213,40 @@ void main() {
         final coreInfo = await EditorCoreInfo.loadFromFilePath(path);
         expect(coreInfo.pages, isNotEmpty);
         expect(
-          coreInfo.pages.any((p) => p.strokes.isNotEmpty),
+          coreInfo.pages.any(
+            (p) =>
+                p.strokes.isNotEmpty ||
+                p.images.isNotEmpty ||
+                !p.quill.controller.document.isEmpty(),
+          ),
           isTrue,
-          reason: 'every sample note has handwriting',
+          reason: 'every note has something on it',
         );
       }
     });
   }, skip: _sample == null);
 }
 
-OneNotePage _page(List<Map<String, dynamic>> strokes) => OneNotePage.fromJson({
+OneNotePage _page(
+  List<Map<String, dynamic>> strokes, {
+  List<Map<String, dynamic>> texts = const [],
+}) => OneNotePage.fromJson({
   'title': 'Test',
   'level': 1,
   'created': 0,
   'updated': 0,
   'strokes': strokes,
   'images': const [],
-  'texts': const [],
+  'texts': texts,
   'skipped': 0,
 }, '');
+
+Map<String, dynamic> _text(String text, {double x = 0, required double y}) => {
+  'x': x,
+  'y': y,
+  'width': 600,
+  'text': text,
+};
 
 Map<String, dynamic> _stroke(
   List<double> points, {

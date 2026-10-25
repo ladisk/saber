@@ -11,7 +11,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 
 use onenote_parser::Parser;
-use onenote_parser::contents::{Content, Image, Ink, InkStroke, Outline, OutlineItem};
+use onenote_parser::contents::{
+    Content, Image, Ink, InkStroke, Outline, OutlineElement, OutlineItem, Table,
+};
 use onenote_parser::notebook::Notebook;
 use onenote_parser::page::{Page, PageContent};
 use onenote_parser::section::{Section, SectionEntry};
@@ -87,6 +89,10 @@ pub struct ImageOut {
 pub struct TextOut {
     pub x: f32,
     pub y: f32,
+    /// The width of the outline the text is in, or 0 if unknown.
+    pub width: f32,
+    /// One paragraph; a table row is one paragraph with its cells
+    /// separated by " | ".
     pub text: String,
 }
 
@@ -308,20 +314,30 @@ fn push_image(image: &Image, x: f32, y: f32, writer: &mut ImageWriter, out: &mut
 fn push_outline(outline: &Outline, writer: &mut ImageWriter, out: &mut PageOut) {
     let x = outline.offset_horizontal().unwrap_or_default() * PX_PER_HALF_INCH;
     let mut y = outline.offset_vertical().unwrap_or_default() * PX_PER_HALF_INCH;
-    push_outline_items(outline.items(), x, &mut y, writer, out);
+    let width = outline.layout_max_width().unwrap_or_default() * PX_PER_HALF_INCH;
+    push_outline_items(outline.items(), x, &mut y, width, writer, out);
 }
 
 fn push_outline_items(
     items: &[OutlineItem],
     x: f32,
     y: &mut f32,
+    width: f32,
     writer: &mut ImageWriter,
     out: &mut PageOut,
 ) {
     for item in items {
         match item {
-            OutlineItem::Group(group) => push_outline_items(group.outlines(), x, y, writer, out),
+            OutlineItem::Group(group) => {
+                push_outline_items(group.outlines(), x, y, width, writer, out)
+            }
             OutlineItem::Element(element) => {
+                // A list item starts with a bullet; numbering is not kept.
+                let bullet = if element.list_contents().is_empty() {
+                    ""
+                } else {
+                    "• "
+                };
                 for content in element.contents() {
                     let height = match content {
                         Content::RichText(text) => {
@@ -329,17 +345,13 @@ fn push_outline_items(
                             if text.is_empty() {
                                 0.0
                             } else {
-                                out.texts.push(TextOut {
-                                    x,
-                                    y: *y,
-                                    text: text.to_string(),
-                                });
-                                text.lines().count() as f32 * TEXT_LINE_HEIGHT
+                                push_text(format!("{bullet}{text}"), x, *y, width, out)
                             }
                         }
                         Content::Image(image) => push_image(image, x, *y, writer, out),
                         Content::Ink(ink) => push_ink(ink, (x, *y), true, out),
-                        Content::Table(_) | Content::EmbeddedFile(_) | Content::Unknown => {
+                        Content::Table(table) => push_table(table, x, *y, width, out),
+                        Content::EmbeddedFile(_) | Content::Unknown => {
                             out.skipped += 1;
                             TEXT_LINE_HEIGHT
                         }
@@ -347,14 +359,70 @@ fn push_outline_items(
                     *y += height;
                 }
                 // Children are indented like a nested list.
+                let indent = PX_PER_HALF_INCH / 2.0;
                 push_outline_items(
                     element.children(),
-                    x + PX_PER_HALF_INCH / 2.0,
+                    x + indent,
                     y,
+                    (width - indent).max(0.0),
                     writer,
                     out,
                 );
             }
+        }
+    }
+}
+
+/// Adds a paragraph of text and returns its height in pixels.
+fn push_text(text: String, x: f32, y: f32, width: f32, out: &mut PageOut) -> f32 {
+    let height = text.lines().count() as f32 * TEXT_LINE_HEIGHT;
+    out.texts.push(TextOut { x, y, width, text });
+    height
+}
+
+/// Adds each row of [table] as a paragraph and returns their height in pixels.
+///
+/// Only the text of the cells is kept, not the table's layout.
+fn push_table(table: &Table, x: f32, y: f32, width: f32, out: &mut PageOut) -> f32 {
+    let mut height = 0.0;
+    for row in table.contents() {
+        let cells: Vec<String> = row
+            .contents()
+            .iter()
+            .map(|cell| {
+                let mut text = String::new();
+                for element in cell.contents() {
+                    collect_text(element, &mut text);
+                }
+                text
+            })
+            .collect();
+        if cells.iter().all(|cell| cell.is_empty()) {
+            continue;
+        }
+        height += push_text(cells.join(" | "), x, y + height, width, out);
+    }
+    height
+}
+
+/// Appends the text of [element] and its children to [text] on one line.
+fn collect_text(element: &OutlineElement, text: &mut String) {
+    for content in element.contents() {
+        if let Content::RichText(rich_text) = content {
+            for line in rich_text.text().lines() {
+                let line = line.trim();
+                if !line.is_empty() {
+                    if !text.is_empty() {
+                        text.push(' ');
+                    }
+                    text.push_str(line);
+                }
+            }
+        }
+    }
+    for child in element.children() {
+        if let OutlineItem::Element(child) = child {
+            collect_text(child, text);
         }
     }
 }

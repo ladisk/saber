@@ -19,11 +19,8 @@ class OneNoteImportSummary {
   var folder = '/';
   var notes = 0;
 
-  /// OneNote pages that had nothing Saber can show, e.g. only typed text.
+  /// OneNote pages that had nothing Saber can show.
   var emptyPages = 0;
-
-  /// Paragraphs of typed text, which Saber can't place on a page.
-  var texts = 0;
 
   /// Images Saber can't show (e.g. EMF) and other skipped content.
   var skipped = 0;
@@ -31,8 +28,9 @@ class OneNoteImportSummary {
 
 /// Imports OneNote notebooks as Saber notes.
 ///
-/// Each OneNote page becomes a note in a folder named after its section.
-/// Handwriting and images are imported; typed text is not.
+/// Each OneNote page becomes a note in a folder named after its section,
+/// with its handwriting, images and typed text.
+/// Typed text keeps its order but not its exact position or formatting.
 abstract final class OneNoteImporter {
   static final log = Logger('OneNoteImporter');
 
@@ -141,7 +139,6 @@ abstract final class OneNoteImporter {
     String folder,
     OneNoteImportSummary summary,
   ) async {
-    summary.texts += page.texts.length;
     summary.skipped += page.skipped;
 
     final images = <String, OneNoteImageData>{};
@@ -159,7 +156,8 @@ abstract final class OneNoteImporter {
       '$folder/${title.isEmpty ? 'Untitled' : title}',
     );
     final coreInfo = EditorCoreInfo(filePath: filePath)
-      ..backgroundPattern = .none;
+      ..backgroundPattern = .none
+      ..lineHeight = OneNoteLayout.lineHeight;
     try {
       OneNoteLayout.addPage(coreInfo, page, images);
       if (coreInfo.pages.isEmpty) {
