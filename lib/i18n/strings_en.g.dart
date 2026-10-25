@@ -106,6 +106,7 @@ class Translations$home$en {
 	late final Translations$home$deleteNoteDialog$en deleteNoteDialog = Translations$home$deleteNoteDialog$en.internal(_root);
 	late final Translations$home$renameFolder$en renameFolder = Translations$home$renameFolder$en.internal(_root);
 	late final Translations$home$deleteFolder$en deleteFolder = Translations$home$deleteFolder$en.internal(_root);
+	late final Translations$home$moveFolder$en moveFolder = Translations$home$moveFolder$en.internal(_root);
 	late final Translations$home$sort$en sort = Translations$home$sort$en.internal(_root);
 	late final Translations$home$layout$en layout = Translations$home$layout$en.internal(_root);
 }
@@ -558,6 +559,30 @@ class Translations$home$deleteFolder$en {
 
 	/// en: 'Also delete all notes inside this folder'
 	String get alsoDeleteContents => 'Also delete all notes inside this folder';
+}
+
+// Path: home.moveFolder
+class Translations$home$moveFolder$en {
+	Translations$home$moveFolder$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Move folder'
+	String get moveFolder => 'Move folder';
+
+	/// en: 'Move $f'
+	String moveName({required Object f}) => 'Move ${f}';
+
+	/// en: 'Move'
+	String get move => 'Move';
+
+	/// en: 'There is already a folder named $f here'
+	String folderExists({required Object f}) => 'There is already a folder named ${f} here';
+
+	/// en: 'The folder is already here'
+	String get sameFolder => 'The folder is already here';
 }
 
 // Path: home.sort

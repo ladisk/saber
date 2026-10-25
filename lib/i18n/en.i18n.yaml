@@ -69,6 +69,12 @@ home:
     deleteName: Delete $f
     delete: Delete
     alsoDeleteContents: Also delete all notes inside this folder
+  moveFolder:
+    moveFolder: Move folder
+    moveName: Move $f
+    move: Move
+    folderExists: There is already a folder named $f here
+    sameFolder: The folder is already here
   sort:
     sortBy: Sort by
     nameAToZ: Name (A-Z)
