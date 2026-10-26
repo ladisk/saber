@@ -69,6 +69,12 @@ home:
     deleteName: Izbriši $f
     delete: Izbriši
     alsoDeleteContents: Izbriši tudi vse zapiske v tej mapi
+  moveFolder:
+    moveFolder: Premakni mapo
+    moveName: Premakni $f
+    move: Premakni
+    folderExists: Tu že obstaja mapa z imenom $f
+    sameFolder: Mapa je že tukaj
   sort:
     sortBy(OUTDATED): Razvrsti po
     nameAToZ(OUTDATED): Ime (A-Ž)

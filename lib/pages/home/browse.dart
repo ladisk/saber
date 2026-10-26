@@ -10,6 +10,7 @@ import 'package:saber/components/home/export_note_button.dart';
 import 'package:saber/components/home/grid_folders.dart';
 import 'package:saber/components/home/home_layout_button.dart';
 import 'package:saber/components/home/masonry_files.dart';
+import 'package:saber/components/home/move_folder_dialog.dart';
 import 'package:saber/components/home/move_note_button.dart';
 import 'package:saber/components/home/new_note_button.dart';
 import 'package:saber/components/home/no_files.dart';
@@ -178,6 +179,13 @@ class _BrowsePageState extends State<BrowsePage> {
               final folderPath = '${path ?? ''}/$folderName';
               await FileManager.deleteDirectory(folderPath);
               findChildrenOfPath();
+            },
+            moveFolder: (String folderName) async {
+              final moved = await showMoveFolderDialog(
+                context,
+                folderPath: '${path ?? ''}/$folderName',
+              );
+              if (moved) findChildrenOfPath();
             },
             folders: [
               for (final directoryPath in children?.directories ?? const [])

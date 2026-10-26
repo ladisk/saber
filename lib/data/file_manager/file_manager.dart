@@ -498,9 +498,32 @@ class FileManager {
 
   static Future renameDirectory(String directoryPath, String newName) async {
     directoryPath = _sanitisePath(directoryPath);
+    final String newPath =
+        directoryPath.substring(0, directoryPath.lastIndexOf('/') + 1) +
+        newName;
+    await moveDirectory(directoryPath, newPath);
+  }
+
+  /// Moves the directory at [directoryPath], with everything in it,
+  /// to [newPath] (e.g. `/a/b` to `/c/b`).
+  ///
+  /// Does nothing if [newPath] already exists
+  /// or is inside [directoryPath].
+  static Future moveDirectory(String directoryPath, String newPath) async {
+    directoryPath = _sanitisePath(directoryPath);
+    newPath = _sanitisePath(newPath);
+    if (newPath == directoryPath || newPath.startsWith('$directoryPath/')) {
+      log.warning('Tried to move $directoryPath into itself');
+      return;
+    }
 
     final directory = Directory(documentsDirectory + directoryPath);
     if (!directory.existsSync()) return;
+    final newDirectory = Directory(documentsDirectory + newPath);
+    if (newDirectory.existsSync()) {
+      log.warning('Tried to move $directoryPath to existing $newPath');
+      return;
+    }
 
     /// recursively find children of [directory] for [_renameReferences]
     final List<String> children = [];
@@ -510,12 +533,12 @@ class FileManager {
       }
     }
 
-    final String newPath =
-        directoryPath.substring(0, directoryPath.lastIndexOf('/') + 1) +
-        newName;
-    await directory.rename(documentsDirectory + newPath);
+    await newDirectory.parent.create(recursive: true);
+    await directory.rename(newDirectory.path);
 
     for (final child in children) {
+      syncer.uploader.enqueueRel(directoryPath + child);
+      syncer.uploader.enqueueRel(newPath + child);
       _renameReferences(directoryPath + child, newPath + child);
       broadcastFileWrite(FileOperationType.delete, directoryPath + child);
       broadcastFileWrite(FileOperationType.write, newPath + child);

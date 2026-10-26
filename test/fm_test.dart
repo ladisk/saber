@@ -155,6 +155,57 @@ void main() {
       ]);
     });
 
+    test('moveDirectory', () async {
+      const from = '/test_moveDirectory/a/folder';
+      const to = '/test_moveDirectory/b/folder';
+      addTearDown(() => FileManager.deleteDirectory('/test_moveDirectory'));
+      for (final file in ['note.sbn2', 'note.sbn2.0', 'sub/other.sbn2']) {
+        await FileManager.writeFile(
+          '$from/$file',
+          utf8.encode(file),
+          awaitWrite: true,
+        );
+      }
+      await FileManager.createFolder('/test_moveDirectory/b');
+
+      await FileManager.moveDirectory(from, to);
+
+      expect(Directory('$rootDir$from').existsSync(), false);
+      for (final file in ['note.sbn2', 'note.sbn2.0', 'sub/other.sbn2']) {
+        final bytes = await FileManager.readFile('$to/$file');
+        expect(utf8.decode(bytes!), file);
+      }
+    });
+
+    test('moveDirectory does not move into itself or overwrite', () async {
+      const from = '/test_moveDirectory2/folder';
+      const existing = '/test_moveDirectory2/other/folder';
+      addTearDown(() => FileManager.deleteDirectory('/test_moveDirectory2'));
+      await FileManager.writeFile(
+        '$from/note.sbn2',
+        utf8.encode('from'),
+        awaitWrite: true,
+      );
+      await FileManager.writeFile(
+        '$existing/note.sbn2',
+        utf8.encode('existing'),
+        awaitWrite: true,
+      );
+
+      await FileManager.moveDirectory(from, '$from/sub/folder');
+      await FileManager.moveDirectory(from, existing);
+
+      expect(
+        utf8.decode((await FileManager.readFile('$from/note.sbn2'))!),
+        'from',
+      );
+      expect(
+        utf8.decode((await FileManager.readFile('$existing/note.sbn2'))!),
+        'existing',
+      );
+      expect(Directory('$rootDir$from/sub').existsSync(), false);
+    });
+
     test('deleteFile', () async {
       const filePath = '/test_deleteFile.sbn2';
       const filePathA = '/test_deleteFile.sbn2.0';
