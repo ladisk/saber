@@ -38,7 +38,10 @@ class const SaberSyncInterface()
       await Future.delayed(const Duration(milliseconds: 200));
     }
 
-    final syncFiles = <SaberSyncFile>[];
+    // Deletions first, including those from before the app was closed
+    final syncFiles = <SaberSyncFile>[
+      for (final path in pendingDeletions()) await SaberSyncFile.relative(path),
+    ];
     await for (final localFile in FileManager.getRootDirectory().list(
       recursive: true,
     )) {
@@ -94,6 +97,9 @@ class const SaberSyncInterface()
             return null;
           case .remote:
             // Remote file is newer or doesn't exist locally
+
+            // Deleted here, but the deletion isn't uploaded yet
+            if (isPendingDeletion(syncFile.relativeLocalPath)) return null;
 
             final remotelyDeleted = syncFile.remoteFile!.size! <= 0;
             final locallyDeleted = stows.fileSyncAlreadyDeleted.value.contains(
@@ -193,6 +199,11 @@ class const SaberSyncInterface()
   }) async {
     if (file.localFile.path == NextcloudClientExtension.configFileName) {
       // Config file changed, already handled in [downloadRemoteFile]
+      return;
+    }
+
+    if (isPendingDeletion(file.relativeLocalPath)) {
+      // Deleted here after the download was queued
       return;
     }
 
@@ -312,6 +323,10 @@ class const SaberSyncInterface()
       lastModified: lastModified,
     );
 
+    if (stows.fileSyncPendingDeletions.value.remove(file.relativeLocalPath)) {
+      stows.fileSyncPendingDeletions.notifyListeners();
+    }
+
     // Give the local file the uploaded date, unless it changed meanwhile,
     // so the upload isn't downloaded again as a newer remote file
     if (localLastModified != null &&
@@ -338,6 +353,29 @@ class const SaberSyncInterface()
       (ms + 999) ~/ 1000 * 1000,
       isUtc: resyncEverythingDate.isUtc,
     );
+  }
+
+  /// Whether [relativePath] was deleted or moved here
+  /// and its deletion isn't uploaded yet.
+  static bool isPendingDeletion(String relativePath) =>
+      stows.fileSyncPendingDeletions.value.contains(relativePath) &&
+      !FileManager.getFile(relativePath).existsSync();
+
+  /// The paths whose deletion isn't uploaded yet.
+  ///
+  /// Paths that exist again (e.g. a note moved back) are dropped:
+  /// they are uploaded like any other file.
+  @visibleForTesting
+  static List<String> pendingDeletions() {
+    final pending = stows.fileSyncPendingDeletions.value;
+    final existing = pending
+        .where((path) => FileManager.getFile(path).existsSync())
+        .toList();
+    if (existing.isNotEmpty) {
+      pending.removeAll(existing);
+      stows.fileSyncPendingDeletions.notifyListeners();
+    }
+    return pending.toList();
   }
 
   static NextcloudClient? _client;
@@ -660,6 +698,23 @@ Future<void> uploadNoteAfterAssets(
     }
   }
   await uploader.enqueue(syncFile: note);
+}
+
+/// Uploads the deletion of [relativeFilePath] before other uploads.
+///
+/// The deletion is remembered until it is uploaded, so the remote file
+/// isn't downloaded again if the app is closed first.
+Future<void> uploadDeletion(String relativeFilePath) async {
+  stows.fileSyncPendingDeletions.value.add(relativeFilePath);
+  stows.fileSyncPendingDeletions.notifyListeners();
+  if (!stows.loggedIn) return;
+
+  final syncFile = await SaberSyncFile.relative(relativeFilePath);
+  syncer.downloader.dequeue(syncFile: syncFile);
+  await syncer.uploader.enqueue(syncFile: syncFile);
+  if (syncer.uploader.isPending(syncFile)) {
+    syncer.uploader.bringToFront(syncFile);
+  }
 }
 
 extension SaberSyncerComponent on SyncerComponent {
