@@ -67,10 +67,7 @@ String _describe(OneNoteImportSummary summary) {
   final notes = summary.notes == 1 ? '1 note' : '${summary.notes} notes';
   return [
     'Imported $notes from OneNote.',
-    if (summary.texts > 0)
-      'Typed text is not imported (${summary.texts} paragraphs).',
-    if (summary.emptyPages > 0)
-      '${summary.emptyPages} pages had no handwriting or images.',
+    if (summary.emptyPages > 0) '${summary.emptyPages} pages were empty.',
     if (summary.skipped > 0) '${summary.skipped} other items were skipped.',
   ].join(' ');
 }
