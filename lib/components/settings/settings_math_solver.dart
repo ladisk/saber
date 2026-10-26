@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saber/components/settings/settings_button.dart';
 import 'package:saber/components/theming/adaptive_switch_list_tile.dart';
+import 'package:saber/data/math_solver/math_solver_settings.dart';
 import 'package:saber/data/math_solver/openai_math_solver.dart';
 import 'package:saber/data/prefs.dart';
 
@@ -80,6 +81,7 @@ class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
     stows.mathSolveModel.value = _solveModel.text.trim();
     stows.mathSetReasoningEffort.value = _setReasoningEffort;
     stows.mathApiKey.value = _key.text.trim();
+    MathSolverSettings.save();
     Navigator.of(context).pop();
   }
 
@@ -98,7 +100,8 @@ class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
                 'Any service with an OpenAI-compatible API works, '
                 'e.g. OpenRouter, OpenAI or a local server. '
                 'The model must accept images. '
-                'Selections you solve are sent to the service.',
+                'Selections you solve are sent to the service. '
+                'These settings sync, encrypted, to your other devices.',
               ),
               const SizedBox(height: 16),
               TextField(
@@ -140,7 +143,7 @@ class _MathSolverSettingsDialogState extends State<_MathSolverSettingsDialog> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'API key',
-                  helperText: 'Stored on this device only.',
+                  helperText: 'Synced with your notes, encrypted.',
                 ),
                 onSubmitted: (_) => _save(),
               ),

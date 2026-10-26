@@ -959,6 +959,8 @@ class FileManager {
   static Future _saveFileAsRecentlyAccessed(String filePath) async {
     // don't add assets to recently accessed
     if (assetFileRegex.hasMatch(filePath)) return;
+    // nor files the user doesn't open, e.g. synced settings
+    if (Editor.isReservedPath(filePath)) return;
 
     stows.recentFiles.value.remove(filePath);
     stows.recentFiles.value.insert(0, filePath);
