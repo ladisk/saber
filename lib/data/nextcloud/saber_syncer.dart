@@ -291,15 +291,16 @@ class const SaberSyncInterface()
     // ignore: avoid_renaming_method_parameters
     Uint8List encryptedBytes,
   ) async {
-    DateTime lastModified;
+    DateTime? localLastModified;
     try {
-      lastModified = file.localFile.lastModifiedSync();
+      localLastModified = file.localFile.lastModifiedSync();
     } on FileSystemException {
-      lastModified = DateTime.now();
+      localLastModified = null;
     }
-    if (lastModified.isBefore(stows.fileSyncResyncEverythingDate.value)) {
-      lastModified = stows.fileSyncResyncEverythingDate.value;
-    }
+    final lastModified = uploadDate(
+      local: localLastModified ?? DateTime.now(),
+      resyncEverythingDate: stows.fileSyncResyncEverythingDate.value,
+    );
 
     final client = SaberSyncInterface.client;
     if (client == null)
@@ -309,6 +310,33 @@ class const SaberSyncInterface()
       encryptedBytes,
       PathUri.parse(file.remotePath),
       lastModified: lastModified,
+    );
+
+    // Give the local file the uploaded date, unless it changed meanwhile,
+    // so the upload isn't downloaded again as a newer remote file
+    if (localLastModified != null &&
+        lastModified != localLastModified &&
+        file.localFile.lastModifiedSync() == localLastModified) {
+      await file.localFile.setLastModified(lastModified);
+    }
+  }
+
+  /// The last modified date sent with an upload.
+  ///
+  /// Files from before [resyncEverythingDate] get that date, rounded up
+  /// to a whole second: the server keeps whole seconds, and a date rounded
+  /// down would still be before [resyncEverythingDate], so the file would
+  /// be uploaded again on every sync.
+  @visibleForTesting
+  static DateTime uploadDate({
+    required DateTime local,
+    required DateTime resyncEverythingDate,
+  }) {
+    if (!local.isBefore(resyncEverythingDate)) return local;
+    final ms = resyncEverythingDate.millisecondsSinceEpoch;
+    return DateTime.fromMillisecondsSinceEpoch(
+      (ms + 999) ~/ 1000 * 1000,
+      isUtc: resyncEverythingDate.isUtc,
     );
   }
 

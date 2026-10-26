@@ -78,4 +78,29 @@ void main() {
       BestFile.remote,
     );
   });
+
+  test('files from before a full resync are uploaded with a whole second', () {
+    final resync = DateTime.utc(2026, 10, 26, 7, 57, 45, 65);
+    final old = DateTime.utc(2026, 10, 25, 16, 30, 8, 590);
+    final uploaded = SaberSyncInterface.uploadDate(
+      local: old,
+      resyncEverythingDate: resync,
+    );
+    expect(uploaded, DateTime.utc(2026, 10, 26, 7, 57, 46));
+    // The server keeps whole seconds, which must not be before the resync
+    final onServer = DateTime.fromMillisecondsSinceEpoch(
+      uploaded.millisecondsSinceEpoch ~/ 1000 * 1000,
+      isUtc: true,
+    );
+    expect(onServer.isBefore(resync), isFalse);
+
+    final recent = resync.add(const Duration(hours: 1));
+    expect(
+      SaberSyncInterface.uploadDate(
+        local: recent,
+        resyncEverythingDate: resync,
+      ),
+      recent,
+    );
+  });
 }
