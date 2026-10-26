@@ -435,6 +435,16 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// File paths deleted or moved locally whose deletion isn't uploaded yet.
+  ///
+  /// Kept so a deletion survives closing the app: until it is uploaded,
+  /// the remote file must not be downloaded again.
+  final fileSyncPendingDeletions = PlainStow(
+    'fileSyncPendingDeletions',
+    <String>{},
+    volatile: !_isOnMainIsolate,
+  );
+
   /// File paths that are known to be corrupted on Nextcloud
   final fileSyncCorruptFiles = PlainStow(
     'fileSyncCorruptFiles',

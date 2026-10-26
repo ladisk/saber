@@ -403,7 +403,7 @@ class FileManager {
       log.warning('Tried to move non-existent file from $fromPath to $toPath');
     }
 
-    syncer.uploader.enqueueRel(fromPath);
+    uploadDeletion(fromPath);
     syncer.uploader.enqueueRel(toPath);
 
     _renameReferences(fromPath, toPath);
@@ -452,7 +452,7 @@ class FileManager {
     if (!file.existsSync()) return;
     await file.delete();
 
-    if (alsoUpload) syncer.uploader.enqueueRel(filePath);
+    if (alsoUpload) uploadDeletion(filePath);
 
     _removeReferences(filePath);
     broadcastFileWrite(FileOperationType.delete, filePath);
@@ -537,7 +537,7 @@ class FileManager {
     await directory.rename(newDirectory.path);
 
     for (final child in children) {
-      syncer.uploader.enqueueRel(directoryPath + child);
+      uploadDeletion(directoryPath + child);
       syncer.uploader.enqueueRel(newPath + child);
       _renameReferences(directoryPath + child, newPath + child);
       broadcastFileWrite(FileOperationType.delete, directoryPath + child);
