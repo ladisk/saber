@@ -67,11 +67,14 @@ class const SaberSyncInterface()
     final client = SaberSyncInterface.client;
     if (client == null) return const [];
 
-    remoteFiles = await findRemoteFiles();
+    remoteFiles = {
+      for (final file in await findRemoteFiles()) file.path.path: file,
+    };
     if (remoteFiles.isEmpty) return const [];
 
+    // [notesLast] also puts each preview (note.sbn2.p) before its note
     final List<SaberSyncFile> changedFiles = await Future.wait(
-      remoteFiles.map((remoteFile) async {
+      remoteFiles.values.toList().map((remoteFile) async {
         final SaberSyncFile syncFile;
         try {
           syncFile = await getSyncFileFromRemoteFile(remoteFile);
@@ -102,33 +105,6 @@ class const SaberSyncInterface()
         }
       }),
     ).then((list) => notesLast(list.nonNulls));
-
-    // Prioritize note.sbn2.p over note.sbn2 (so the preview is updated first)
-    final previewSyncFiles = changedFiles
-        .where((syncFile) => syncFile.localFile.path.endsWith('.p'))
-        .toList(growable: false);
-    for (final previewSyncFile in previewSyncFiles) {
-      final previewSyncFileIndex = changedFiles.indexOf(previewSyncFile);
-      final mainSyncFileIndex = changedFiles.indexWhere(
-        (syncFile) =>
-            syncFile.localFile.path ==
-            previewSyncFile.localFile.path.substring(
-              0,
-              previewSyncFile.localFile.path.length - 2,
-            ),
-      );
-      if (previewSyncFileIndex <= -1 || mainSyncFileIndex <= -1) continue;
-
-      if (previewSyncFileIndex >= mainSyncFileIndex) {
-        changedFiles
-          ..removeAt(previewSyncFileIndex)
-          ..insert(mainSyncFileIndex, previewSyncFile);
-      } else {
-        changedFiles
-          ..removeAt(previewSyncFileIndex)
-          ..insert(mainSyncFileIndex - 1, previewSyncFile);
-      }
-    }
 
     return changedFiles;
   }
@@ -344,12 +320,15 @@ class const SaberSyncInterface()
     return _client;
   }
 
-  /// A list of remote files from server,
+  /// The remote files from the server by path,
   /// used to speed up [getSyncFileFromLocalFile].
   ///
-  /// This is set in [findRemoteFiles], and may be empty
+  /// This is set from [findRemoteFiles], and may be empty
   /// or incomplete if [findRemoteFiles] has not been called recently.
-  static var remoteFiles = <WebDavFile>{};
+  ///
+  /// A map, not a list: it is looked up for every file in every sync,
+  /// and [PathUri.path] builds a new string on each call.
+  static var remoteFiles = <String, WebDavFile>{};
 
   /// A cache map to encrypt file paths.
   /// e.g. '/path/to/file.sbn2' -> 'L3BhdGgvdG8vZmlsZS5zYm4y'
@@ -522,16 +501,29 @@ class const SaberSyncInterface()
     }
 
     // File exists locally, check if it's newer than the remote file
-    final lastModifiedLocal = file.localFile.lastModifiedSync();
-    if (lastModifiedRemote.difference(lastModifiedLocal).abs() <
-        const Duration(milliseconds: 500)) {
-      return onEqualFiles;
-    } else if (lastModifiedRemote.isAfter(lastModifiedLocal)) {
-      return .remote;
-    } else {
-      return .local;
-    }
+    return newerFile(
+      local: file.localFile.lastModifiedSync(),
+      remote: lastModifiedRemote,
+      onEqualFiles: onEqualFiles,
+    );
   }
+
+  /// Compares last modified dates in whole seconds,
+  /// because the server keeps only whole seconds (X-OC-Mtime).
+  /// Otherwise a file saved at e.g. 16.6 s looks newer than its upload
+  /// at 16 s and is uploaded again on every sync.
+  @visibleForTesting
+  static BestFile newerFile({
+    required DateTime local,
+    required DateTime remote,
+    required BestFile onEqualFiles,
+  }) {
+    final secondsLocal = _seconds(local), secondsRemote = _seconds(remote);
+    if (secondsRemote == secondsLocal) return onEqualFiles;
+    return secondsRemote > secondsLocal ? .remote : .local;
+  }
+
+  static int _seconds(DateTime date) => date.millisecondsSinceEpoch ~/ 1000;
 
   Future<WebDavFile?> getWebDavFile(
     String remotePath, {
@@ -542,16 +534,12 @@ class const SaberSyncInterface()
     String remotePath, {
     bool preferCache = true,
   }) async {
-    final cachedWebDavFile = remoteFiles.firstWhereOrNull(
-      (remoteFile) => remoteFile.path.path == remotePath,
-    );
+    final cachedWebDavFile = remoteFiles[remotePath];
     if (preferCache && cachedWebDavFile != null) return cachedWebDavFile;
 
     final webDavFile = await _getWebDavFileUncached(remotePath);
     if (webDavFile != null) {
-      remoteFiles
-        ..remove(cachedWebDavFile)
-        ..add(webDavFile);
+      remoteFiles[remotePath] = webDavFile;
     }
     return webDavFile ?? cachedWebDavFile;
   }
