@@ -47,6 +47,7 @@ import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/math_solver/math_solver_settings.dart';
 import 'package:saber/data/math_solver/openai_math_solver.dart';
 import 'package:saber/data/math_solver/selection_image.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
@@ -101,6 +102,7 @@ class Editor extends StatefulWidget {
 
   static final _reservedFilePaths = <RegExp>[
     RegExp(RegExp.escape(Whiteboard.filePath)),
+    RegExp(RegExp.escape(MathSolverSettings.filePath)),
   ];
 
   /// Whether the platform can rasterize a pdf
