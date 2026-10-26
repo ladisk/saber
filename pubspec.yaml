@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.36.1+136010
+version: 1.37.0+137000
 
 environment:
   sdk: ^3.13.0
@@ -119,8 +119,6 @@ dependencies:
 
   super_clipboard: ^0.10.0-dev.2
 
-  fast_image_resizer: ^0.0.2
-
   bson: ^5.0.0
 
   flutter_speed_dial: ^7.0.0
@@ -162,7 +160,7 @@ dependencies:
 
   flutter_hooks: ^0.21.3+1
   dynamic_yaru: ^0.2.0
-  image: ^4.8.0
+  image: 4.10.2  # 4.11.0 has a broken version constraint for `archive`
   pool: ^1.5.2
   flutter_math_fork: ^0.7.4
 

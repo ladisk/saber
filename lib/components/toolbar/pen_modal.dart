@@ -4,56 +4,45 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
 import 'package:saber/data/extensions/axis_extensions.dart';
 import 'package:saber/data/prefs.dart';
-import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-class PenModal extends StatefulWidget {
+class PenModal<T extends Pen> extends StatefulWidget {
   const new({super.key, required this.getTool, required this.setTool});
 
-  final Tool Function() getTool;
+  /// Gets the current/last-used tool of type [T],
+  /// e.g. [Pen.currentPen] or [Highlighter.currentHighlighter].
+  final T Function() getTool;
+
+  /// Sets a pen to be the current pen.
   final void Function(Pen) setTool;
 
   @override
-  State<PenModal> createState() => _PenModalState();
+  State<PenModal<T>> createState() => _PenModalState<T>();
 }
 
-class _PenModalState extends State<PenModal> {
+class _PenModalState<T extends Pen> extends State<PenModal<T>> {
   @override
   Widget build(BuildContext context) {
     final axis = stows.editorToolbarAlignment.value.axis.opposite;
-    final Tool currentTool = widget.getTool();
-    final Pen currentPen;
-    if (currentTool is Pen) {
-      currentPen = currentTool;
-    } else {
-      return const SizedBox();
-    }
+    final pen = widget.getTool();
 
     return Flex(
       direction: axis,
       mainAxisAlignment: .center,
+      spacing: 8,
       children: [
-        SizePicker(axis: axis, pen: currentPen),
-        if (currentPen is! Highlighter && currentPen is! Pencil) ...[
-          const SizedBox.square(dimension: 8),
-          IconButton(
+        SizePicker(axis: axis, pen: pen),
+
+        if (pen is! Highlighter && pen is! Pencil) ...[
+          _PenSelector(
+            isSelected: Pen.currentPen.icon == Pen.fountainPenIcon,
             onPressed: () => setState(() {
               widget.setTool(Pen.fountainPen());
             }),
-            style: TextButton.styleFrom(
-              foregroundColor: Pen.currentPen.icon == Pen.fountainPenIcon
-                  ? ColorScheme.of(context).secondary
-                  : ColorScheme.of(context).onSurface,
-              backgroundColor: Pen.currentPen.icon == Pen.fountainPenIcon
-                  ? Theme.of(context).colorScheme.secondary
-                        .withValues(alpha: 0.1)
-                  : Colors.transparent,
-              shape: const CircleBorder(),
-            ),
             tooltip: t.editor.pens.fountainPen,
             icon: SvgPicture.asset(
               'assets/images/scribble_fountain.svg',
@@ -66,21 +55,11 @@ class _PenModalState extends State<PenModal> {
               ),
             ),
           ),
-          const SizedBox.square(dimension: 8),
-          IconButton(
+          _PenSelector(
+            isSelected: Pen.currentPen.icon == Pen.ballpointPenIcon,
             onPressed: () => setState(() {
               widget.setTool(Pen.ballpointPen());
             }),
-            style: TextButton.styleFrom(
-              foregroundColor: Pen.currentPen.icon == Pen.ballpointPenIcon
-                  ? ColorScheme.of(context).secondary
-                  : ColorScheme.of(context).onSurface,
-              backgroundColor: Pen.currentPen.icon == Pen.ballpointPenIcon
-                  ? Theme.of(context).colorScheme.secondary
-                        .withValues(alpha: 0.1)
-                  : Colors.transparent,
-              shape: const CircleBorder(),
-            ),
             tooltip: t.editor.pens.ballpointPen,
             icon: SvgPicture.asset(
               'assets/images/scribble_ballpoint.svg',
@@ -93,26 +72,42 @@ class _PenModalState extends State<PenModal> {
               ),
             ),
           ),
-          const SizedBox.square(dimension: 8),
-          IconButton(
+          _PenSelector(
+            isSelected: Pen.currentPen.icon == ShapePen.shapePenIcon,
             onPressed: () => setState(() {
               widget.setTool(ShapePen());
             }),
-            style: TextButton.styleFrom(
-              foregroundColor: Pen.currentPen.icon == ShapePen.shapePenIcon
-                  ? ColorScheme.of(context).secondary
-                  : ColorScheme.of(context).onSurface,
-              backgroundColor: Pen.currentPen.icon == ShapePen.shapePenIcon
-                  ? Theme.of(context).colorScheme.secondary
-                        .withValues(alpha: 0.1)
-                  : Colors.transparent,
-              shape: const CircleBorder(),
-            ),
             tooltip: t.editor.pens.shapePen,
             icon: const FaIcon(ShapePen.shapePenIcon),
           ),
         ],
       ],
+    );
+  }
+}
+
+class const _PenSelector({
+  required final bool isSelected,
+  required final void Function() onPressed,
+  required final String tooltip,
+  required final Widget icon,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      isSelected: isSelected,
+      style: IconButton.styleFrom(
+        foregroundColor: isSelected
+            ? ColorScheme.of(context).secondary
+            : ColorScheme.of(context).onSurface,
+        backgroundColor: isSelected
+            ? ColorScheme.of(context).secondary.withValues(alpha: 0.1)
+            : Colors.transparent,
+        shape: const CircleBorder(),
+      ),
+      tooltip: tooltip,
+      icon: icon,
     );
   }
 }

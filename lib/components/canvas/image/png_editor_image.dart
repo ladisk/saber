@@ -1,29 +1,7 @@
 part of 'editor_image.dart';
 
 class PngEditorImage extends EditorImage {
-  ImageProvider? imageProvider;
-
-  Uint8List? thumbnailBytes;
-  Size thumbnailSize = .zero;
-
-  /// The maximum image size allowed for this image.
-  /// If null, Prefs.maxImageSize will be used instead.
-  Size? maxSize;
-
-  @override
-  set isThumbnail(bool isThumbnail) {
-    super.isThumbnail = isThumbnail;
-    if (isThumbnail && thumbnailBytes != null) {
-      imageProvider = MemoryImage(thumbnailBytes!);
-      final scale = thumbnailSize.width / naturalSize.width;
-      srcRect = .fromLTWH(
-        srcRect.left * scale,
-        srcRect.top * scale,
-        srcRect.width * scale,
-        srcRect.height * scale,
-      );
-    }
-  }
+  ImageProvider imageProvider;
 
   new({
     required super.id,
@@ -32,7 +10,6 @@ class PngEditorImage extends EditorImage {
     required this.imageProvider,
     required super.pageIndex,
     required super.pageSize,
-    this.maxSize,
     super.invertible,
     super.backgroundFit,
     required super.onMoveImage,
@@ -43,7 +20,6 @@ class PngEditorImage extends EditorImage {
     super.dstRect,
     super.srcRect,
     super.naturalSize,
-    this.thumbnailBytes,
     super.isThumbnail,
   });
 
@@ -109,17 +85,19 @@ class PngEditorImage extends EditorImage {
         json['sh'] ?? 0,
       ),
       naturalSize: Size(json['nw'] ?? 0, json['nh'] ?? 0),
-      thumbnailBytes: json['t'] != null
-          ? Uint8List.fromList((json['t'] as List<dynamic>).cast<int>())
-          : null,
       isThumbnail: isThumbnail,
     );
   }
 
   @override
-  Map<String, dynamic> toJson(OrderedAssetCache assets) =>
-      super.toJson(assets)
-        ..addAll({if (imageProvider != null) 'a': assets.add(imageProvider!)});
+  Map<String, dynamic> toJson(OrderedAssetCache assets) {
+    final json = super.toJson(assets);
+    assert(!json.containsKey('a'));
+
+    json['a'] = assets.addImage(imageProvider);
+
+    return json;
+  }
 
   @override
   Future<void> firstLoad() async {
@@ -144,21 +122,21 @@ class PngEditorImage extends EditorImage {
                 Size(descriptor.width.toDouble(), descriptor.height.toDouble()),
           );
 
-      if (maxSize == null) {
-        await stows.maxImageSize.waitUntilRead();
-        maxSize = .square(stows.maxImageSize.value);
-      }
-      final Size reducedSize = EditorImage.resize(naturalSize, maxSize!);
+      if (!stows.maxImageSize.loaded) await stows.maxImageSize.waitUntilRead();
+      final reducedSize = EditorImage.resize(
+        naturalSize,
+        .square(stows.maxImageSize.value),
+      );
       if (naturalSize.width != reducedSize.width && !isThumbnail) {
         await null; // wait for next event-loop iteration
 
-        final resizedByteData = await resizeImage(
+        final resizedImage = await _resizeImage(
           bytes,
-          width: reducedSize.width.toInt(),
-          height: reducedSize.height.toInt(),
+          width: reducedSize.width.round(),
+          height: reducedSize.height.round(),
         );
-        if (resizedByteData != null) {
-          imageProvider = MemoryImage(resizedByteData.buffer.asUint8List());
+        if (resizedImage != null) {
+          imageProvider = MemoryImage(resizedImage);
         }
 
         naturalSize = reducedSize;
@@ -191,8 +169,7 @@ class PngEditorImage extends EditorImage {
 
   @override
   Future<void> precache(BuildContext context) async {
-    if (imageProvider == null) return;
-    return await precacheImage(imageProvider!, context);
+    return await precacheImage(imageProvider, context);
   }
 
   @override
@@ -213,7 +190,7 @@ class PngEditorImage extends EditorImage {
 
     return InvertWidget(
       invert: invert,
-      child: Image(image: imageProvider!, fit: boxFit),
+      child: Image(image: imageProvider, fit: boxFit),
     );
   }
 
@@ -235,7 +212,41 @@ class PngEditorImage extends EditorImage {
     dstRect: dstRect,
     srcRect: srcRect,
     naturalSize: naturalSize,
-    thumbnailBytes: thumbnailBytes,
     isThumbnail: isThumbnail,
   );
+}
+
+/// Resizes the image [rawImage] to [width] and [height].
+Future<Uint8List?> _resizeImage(
+  Uint8List rawImage, {
+  required int width,
+  required int height,
+}) async {
+  final buffer = await ui.ImmutableBuffer.fromUint8List(rawImage);
+  try {
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    try {
+      final codec = await descriptor.instantiateCodec(
+        targetWidth: width,
+        targetHeight: height,
+      );
+      try {
+        final resizedImage = (await codec.getNextFrame()).image;
+        try {
+          final byteData = await resizedImage.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
+          return byteData?.buffer.asUint8List();
+        } finally {
+          resizedImage.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+    } finally {
+      descriptor.dispose();
+    }
+  } finally {
+    buffer.dispose();
+  }
 }

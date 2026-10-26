@@ -48,6 +48,7 @@ void main() {
     await SelectionClipboard.copy(
       SelectResult(
         pageIndex: 0,
+        pageIndexStart: 0,
         strokes: [stroke(const Offset(50, 60))],
         images: [png],
         path: Path()..addRect(const Rect.fromLTWH(0, 0, 100, 100)),
@@ -68,8 +69,8 @@ void main() {
     expect(pastedImage.pageIndex, 2);
     expect(pastedImage.dstRect, png.dstRect);
     expect(
-      (pastedImage.imageProvider! as MemoryImage).bytes,
-      (png.imageProvider! as MemoryImage).bytes,
+      (pastedImage.imageProvider as MemoryImage).bytes,
+      (png.imageProvider as MemoryImage).bytes,
     );
   });
 
@@ -77,6 +78,7 @@ void main() {
     await SelectionClipboard.copy(
       SelectResult(
         pageIndex: 0,
+        pageIndexStart: 0,
         strokes: [stroke(const Offset(50, 60))],
         images: const [],
         path: Path(),
@@ -108,6 +110,7 @@ void main() {
     final select = Select.currentSelect
       ..selectResult = SelectResult(
         pageIndex: 0,
+        pageIndexStart: 0,
         strokes: [original],
         images: const [],
         path: Path(),

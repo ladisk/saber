@@ -87,6 +87,7 @@ abstract final class SelectionClipboard {
     ];
     return SelectResult(
       pageIndex: pageIndex,
+      pageIndexStart: pageIndex,
       strokes: strokes,
       images: images,
       path: _path.shift(offset),

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/data/constants.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sbn/font_fallbacks.dart';
 import 'package:yaru/yaru.dart';
@@ -113,6 +114,9 @@ abstract class SaberTheme {
     final textTheme = _Components.textTheme(platform, base.colorScheme);
     final fontFamily = textTheme.bodyMedium!.fontFamily;
     final fontFamilyFallback = textTheme.bodyMedium!.fontFamilyFallback;
+    final scaffoldBackgroundColor = base.colorScheme.isDark
+        ? const Color(0xFF232323)
+        : const Color(0xFFfafafa);
     return base.copyWith(
       platform: platform,
       textTheme: textTheme,
@@ -137,8 +141,12 @@ abstract class SaberTheme {
               fontFamilyFallback: fontFamilyFallback,
             ),
       ),
-      // Leave Yaru's app bar theme, since it adds a border bottom.
-      // appBarTheme: _Components.appBarTheme,
+      scaffoldBackgroundColor: scaffoldBackgroundColor,
+      appBarTheme: _Components.appBarTheme.copyWith(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: scaffoldBackgroundColor,
+      ),
     );
   }
 }
@@ -179,10 +187,12 @@ abstract class _Components {
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: const .all(.circular(kYaruContainerRadius)),
+        borderRadius: const .all(.circular(kSaberCardRadius)),
         side: BorderSide(
           color: colorScheme.onSurface.withValues(alpha: 0.12),
-          width: 2,
+          width: colorScheme.isHighContrast
+              ? kSaberBorderWidthAccessible
+              : kSaberBorderWidthInaccessible,
         ),
       ),
     );
@@ -199,6 +209,12 @@ extension SaberThemePlatform on TargetPlatform {
   bool get isCupertino => switch (this) {
     .iOS => true,
     .macOS => true,
+    _ => false,
+  };
+
+  bool get isMaterialNative => switch (this) {
+    .android => true,
+    .fuchsia => true,
     _ => false,
   };
 }

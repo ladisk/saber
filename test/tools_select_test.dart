@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
@@ -461,6 +462,7 @@ void main() {
           strokes: const [],
           images: const [],
           path: Path(),
+          pageIndexStart: 0,
         );
         expect(select.getDominantStrokeColor(), isNull);
       });
@@ -478,6 +480,7 @@ void main() {
           ],
           images: const [],
           path: Path(),
+          pageIndexStart: 0,
         );
         select.doneSelecting = true;
         expect(select.getDominantStrokeColor(), Colors.blue);
@@ -494,7 +497,7 @@ class TestImage extends PngEditorImage {
     : super(
         id: -1,
         extension: '.png',
-        imageProvider: null,
+        imageProvider: MemoryImage(Uint8List(0)),
         pageIndex: 0,
         pageSize: const Size(100, 100),
         onMoveImage: null,
