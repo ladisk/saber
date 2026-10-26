@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -167,6 +168,30 @@ void main() {
       final coreInfo = EditorCoreInfo(filePath: '');
       OneNoteLayout.addPage(coreInfo, _page(const []), const {});
       expect(coreInfo.pages, isEmpty);
+    });
+  });
+
+  group('OneNoteImporter.fitSyncedPath', () {
+    const dir = '/Predavanja/Tehniška mehanika 2/Arhiv/TM2 2016/';
+
+    test('keeps a short title', () {
+      expect(
+        OneNoteImporter.fitSyncedPath(dir, 'Kinetika', assets: 3),
+        'Kinetika',
+      );
+    });
+
+    test('shortens a long title so the note and its assets can sync', () {
+      const title =
+          'Kinetika togega telesa v ravnini - rotacija okoli nepomične osi';
+      final fitted = OneNoteImporter.fitSyncedPath(dir, title, assets: 12);
+
+      expect(title, startsWith(fitted));
+      expect(fitted.length, lessThan(title.length));
+      expect(
+        utf8.encode('$dir$fitted${Editor.extension}.11 (99)').length,
+        lessThanOrEqualTo(OneNoteImporter.maxSyncedPathBytes),
+      );
     });
   });
 

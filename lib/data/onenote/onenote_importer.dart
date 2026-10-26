@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:archive/archive_io.dart';
@@ -153,7 +155,7 @@ abstract final class OneNoteImporter {
 
     final title = _sanitize(page.title);
     final filePath = await FileManager.suffixFilePathToMakeItUnique(
-      '$folder/${title.isEmpty ? 'Untitled' : title}',
+      '$folder/${fitSyncedPath('$folder/', title.isEmpty ? 'Untitled' : title, assets: images.length)}',
     );
     final coreInfo = EditorCoreInfo(filePath: filePath)
       ..backgroundPattern = .none
@@ -256,4 +258,26 @@ abstract final class OneNoteImporter {
 
   /// Long page titles are cut to this many characters.
   static const maxNameLength = 80;
+
+  /// Saber uploads a file under its encrypted path written in hex,
+  /// and Nextcloud rejects file names over 255 characters,
+  /// so a path longer than this many UTF-8 bytes can't be synced.
+  static const maxSyncedPathBytes = 111;
+
+  /// Shortens [title] so that the note in [dir] and its [assets]
+  /// (e.g. "title.sbn2.12") can be synced, even with a " (99)" suffix
+  /// from [FileManager.suffixFilePathToMakeItUnique].
+  @visibleForTesting
+  static String fitSyncedPath(String dir, String title, {required int assets}) {
+    final suffixes = '${Editor.extension}.${max(assets - 1, 0)} (99)';
+    final budget = maxSyncedPathBytes - utf8.encode('$dir$suffixes').length;
+    var chars = title.characters;
+    while (chars.length > 1 && utf8.encode(chars.string).length > budget) {
+      chars = chars.skipLast(1);
+    }
+    if (chars.length < title.characters.length) {
+      log.info('Shortened "$title" to "$chars" so it can be synced');
+    }
+    return chars.string.trimRight();
+  }
 }
