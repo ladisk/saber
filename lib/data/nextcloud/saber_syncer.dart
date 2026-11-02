@@ -9,6 +9,7 @@ import 'package:flutter/painting.dart';
 import 'package:logging/logging.dart';
 import 'package:nextcloud/nextcloud.dart';
 import 'package:nextcloud/webdav.dart';
+import 'package:path/path.dart' as p;
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/nextcloud/errors.dart';
 import 'package:saber/data/nextcloud/nextcloud_client_extension.dart';
@@ -69,6 +70,11 @@ class const SaberSyncInterface()
   Future<List<SaberSyncFile>> findRemoteChanges() async {
     final client = SaberSyncInterface.client;
     if (client == null) return const [];
+
+    if (!_deletedLeftoverFolders) {
+      _deletedLeftoverFolders = true;
+      await deleteLeftoverFolders();
+    }
 
     remoteFiles = {
       for (final file in await findRemoteFiles()) file.path.path: file,
@@ -212,6 +218,7 @@ class const SaberSyncInterface()
       await FileManager.deleteFile(file.relativeLocalPath, alsoUpload: false);
       stows.fileSyncAlreadyDeleted.value.add(file.relativeLocalPath);
       stows.fileSyncAlreadyDeleted.notifyListeners();
+      await FileManager.deleteEmptyParentDirectories(file.relativeLocalPath);
       return;
     }
 
@@ -353,6 +360,24 @@ class const SaberSyncInterface()
       (ms + 999) ~/ 1000 * 1000,
       isUtc: resyncEverythingDate.isUtc,
     );
+  }
+
+  static var _deletedLeftoverFolders = false;
+
+  /// Deletes folders left empty by deletions downloaded
+  /// before [writeLocalFile] removed such folders.
+  ///
+  /// Only folders that held a file deleted on another device are touched,
+  /// so empty folders made on this device stay.
+  @visibleForTesting
+  static Future<void> deleteLeftoverFolders() async {
+    final folders = {
+      for (final path in stows.fileSyncAlreadyDeleted.value)
+        p.posix.dirname(path),
+    };
+    for (final folder in folders) {
+      await FileManager.deleteEmptyParentDirectories('$folder/_');
+    }
   }
 
   /// Whether [relativePath] was deleted or moved here

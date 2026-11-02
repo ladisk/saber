@@ -566,6 +566,32 @@ class FileManager {
     await directory.delete(recursive: recursive);
   }
 
+  /// Deletes the folders around [filePath] that are left empty,
+  /// from its own folder up towards the root.
+  ///
+  /// Folders only exist on the server through the files in them, so when
+  /// another device deletes or moves away the last note of a folder,
+  /// this device would otherwise keep showing an empty folder.
+  /// Stops at the first folder that is missing or not empty.
+  static Future<void> deleteEmptyParentDirectories(String filePath) async {
+    var directoryPath = p.posix.dirname(_sanitisePath(filePath));
+    while (directoryPath != '/' &&
+        directoryPath != '.' &&
+        directoryPath.isNotEmpty) {
+      final directory = Directory(documentsDirectory + directoryPath);
+      if (!directory.existsSync()) return;
+      if (!await directory.list().isEmpty) return;
+      try {
+        await directory.delete();
+      } on FileSystemException catch (e) {
+        log.warning('Could not delete empty folder $directoryPath: $e');
+        return;
+      }
+      broadcastFileWrite(.delete, directoryPath);
+      directoryPath = p.posix.dirname(directoryPath);
+    }
+  }
+
   /// Gets the children of a directory, separated into
   /// [DirectoryChildren.directories] and [DirectoryChildren.files].
   ///
