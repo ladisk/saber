@@ -10,11 +10,15 @@ class MasonryFiles extends StatefulWidget {
     required this.files,
     required this.selectedFiles,
     required this.crossAxisCount,
+    this.showFolders = false,
   });
 
   final List<String> files;
   final int crossAxisCount;
   final ValueNotifier<List<String>> selectedFiles;
+
+  /// Whether each card shows its note's folder under the title.
+  final bool showFolders;
 
   @override
   State<MasonryFiles> createState() => _MasonryFilesState();
@@ -49,6 +53,7 @@ class _MasonryFilesState extends State<MasonryFiles> {
             toggleSelection: toggleSelection,
             selected: widget.selectedFiles.value.contains(file),
             isAnythingSelected: isAnythingSelected,
+            showFolder: widget.showFolders,
           ),
         );
       },

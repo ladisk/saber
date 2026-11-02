@@ -75,6 +75,13 @@ home:
     move: Move
     folderExists: There is already a folder named $f here
     sameFolder: The folder is already here
+  search:
+    search: Search notes
+    hint: Search by title
+    latest: Latest edits
+    latestTitle: Recently edited notes
+    noResults: No notes match your search
+    close: Back to folders
   sort:
     sortBy: Sort by
     nameAToZ: Name (A-Z)
