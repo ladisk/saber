@@ -83,6 +83,7 @@ class _Translations$home$sl extends Translations$home$en {
 	@override late final _Translations$home$renameFolder$sl renameFolder = _Translations$home$renameFolder$sl._(_root);
 	@override late final _Translations$home$deleteFolder$sl deleteFolder = _Translations$home$deleteFolder$sl._(_root);
 	@override late final _Translations$home$moveFolder$sl moveFolder = _Translations$home$moveFolder$sl._(_root);
+	@override late final _Translations$home$search$sl search = _Translations$home$search$sl._(_root);
 	@override late final _Translations$home$sort$sl sort = _Translations$home$sort$sl._(_root);
 	@override late final _Translations$home$layout$sl layout = _Translations$home$layout$sl._(_root);
 }
@@ -387,6 +388,21 @@ class _Translations$home$moveFolder$sl extends Translations$home$moveFolder$en {
 	@override String get move => 'Premakni';
 	@override String folderExists({required Object f}) => 'Tu že obstaja mapa z imenom ${f}';
 	@override String get sameFolder => 'Mapa je že tukaj';
+}
+
+// Path: home.search
+class _Translations$home$search$sl extends Translations$home$search$en {
+	_Translations$home$search$sl._(TranslationsSl root) : this._root = root, super.internal(root);
+
+	final TranslationsSl _root; // ignore: unused_field
+
+	// Translations
+	@override String get search => 'Iskanje zapiskov';
+	@override String get hint => 'Išči po naslovu';
+	@override String get latest => 'Zadnje spremembe';
+	@override String get latestTitle => 'Nazadnje spremenjeni zapiski';
+	@override String get noResults => 'Noben zapisek ne ustreza iskanju';
+	@override String get close => 'Nazaj na mape';
 }
 
 // Path: home.sort

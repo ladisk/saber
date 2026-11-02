@@ -107,6 +107,7 @@ class Translations$home$en {
 	late final Translations$home$renameFolder$en renameFolder = Translations$home$renameFolder$en.internal(_root);
 	late final Translations$home$deleteFolder$en deleteFolder = Translations$home$deleteFolder$en.internal(_root);
 	late final Translations$home$moveFolder$en moveFolder = Translations$home$moveFolder$en.internal(_root);
+	late final Translations$home$search$en search = Translations$home$search$en.internal(_root);
 	late final Translations$home$sort$en sort = Translations$home$sort$en.internal(_root);
 	late final Translations$home$layout$en layout = Translations$home$layout$en.internal(_root);
 }
@@ -583,6 +584,33 @@ class Translations$home$moveFolder$en {
 
 	/// en: 'The folder is already here'
 	String get sameFolder => 'The folder is already here';
+}
+
+// Path: home.search
+class Translations$home$search$en {
+	Translations$home$search$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Search notes'
+	String get search => 'Search notes';
+
+	/// en: 'Search by title'
+	String get hint => 'Search by title';
+
+	/// en: 'Latest edits'
+	String get latest => 'Latest edits';
+
+	/// en: 'Recently edited notes'
+	String get latestTitle => 'Recently edited notes';
+
+	/// en: 'No notes match your search'
+	String get noResults => 'No notes match your search';
+
+	/// en: 'Back to folders'
+	String get close => 'Back to folders';
 }
 
 // Path: home.sort

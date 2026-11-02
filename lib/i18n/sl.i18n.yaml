@@ -75,6 +75,13 @@ home:
     move: Premakni
     folderExists: Tu že obstaja mapa z imenom $f
     sameFolder: Mapa je že tukaj
+  search:
+    search: Iskanje zapiskov
+    hint: Išči po naslovu
+    latest: Zadnje spremembe
+    latestTitle: Nazadnje spremenjeni zapiski
+    noResults: Noben zapisek ne ustreza iskanju
+    close: Nazaj na mape
   sort:
     sortBy(OUTDATED): Razvrsti po
     nameAToZ(OUTDATED): Ime (A-Ž)
