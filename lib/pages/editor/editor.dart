@@ -7,7 +7,7 @@ import 'package:collapsible/collapsible.dart';
 import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, listEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +17,7 @@ import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -43,6 +44,7 @@ import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
+import 'package:saber/data/editor/selection_export.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
@@ -66,6 +68,8 @@ import 'package:saber/pages/editor/editor_fork_history.dart';
 import 'package:saber/pages/home/whiteboard.dart';
 import 'package:sbn/change.dart';
 import 'package:super_clipboard/super_clipboard.dart';
+
+part 'editor_clipboard.dart';
 
 typedef _PhotoInfo = ({Uint8List bytes, String extension});
 
@@ -1426,11 +1430,11 @@ class EditorState extends State<Editor> {
             selected: currentTool is Select && select.touchMode,
             onSelected: () => _setSelectMode(touchMode: true),
           ),
-          if (!SelectionClipboard.isEmpty)
+          if (!coreInfo.readOnly)
             ToolPaletteItem(
               icon: const Icon(Icons.content_paste),
               tooltip: 'Paste',
-              onSelected: pasteSelection,
+              onSelected: paste,
             ),
         ]),
         ToolPaletteGroup([
@@ -1910,9 +1914,7 @@ class EditorState extends State<Editor> {
       filePath: coreInfo.filePath,
       cut: cut,
     );
-    // Replace what's on the system clipboard,
-    // so pasting doesn't bring back an older image
-    unawaited(_writeClipboardText('Saber selection'));
+    unawaited(_writeSelectionToClipboard(tool.selectResult));
     if (mounted) setState(() {});
   }
 
@@ -1920,16 +1922,6 @@ class EditorState extends State<Editor> {
     if (coreInfo.readOnly) return;
     await copySelection(cut: true);
     if (mounted && !SelectionClipboard.isEmpty) deleteSelection();
-  }
-
-  Future<void> _writeClipboardText(String text) async {
-    final clipboard = SystemClipboard.instance;
-    if (clipboard == null) return;
-    try {
-      await clipboard.write([DataWriterItem()..add(Formats.plainText(text))]);
-    } catch (e) {
-      log.warning('Failed to write to the clipboard: $e');
-    }
   }
 
   /// Pastes the copied selection onto the current page and selects it.
@@ -1971,61 +1963,8 @@ class EditorState extends State<Editor> {
     });
   }
 
-  Future paste() async {
-    /// Maps image formats to their file extension.
-    const Map<SimpleFileFormat, String> formats = {
-      Formats.jpeg: '.jpeg',
-      Formats.png: '.png',
-      Formats.gif: '.gif',
-      Formats.tiff: '.tiff',
-      Formats.bmp: '.bmp',
-      Formats.ico: '.ico',
-      Formats.svg: '.svg',
-      Formats.webp: '.webp',
-    };
-
-    final reader = await SystemClipboard.instance?.read();
-    if (reader == null) return pasteSelection();
-    if (!formats.keys.any(reader.canProvide)) return pasteSelection();
-
-    final List<_PhotoInfo> photoInfos = [];
-    final List<ReadProgress> progresses = [];
-
-    for (final format in formats.keys) {
-      if (!reader.canProvide(format)) continue;
-      final progress = reader.getFile(format, (file) async {
-        final stream = file.getStream();
-        final List<int> bytes = [];
-        await for (final chunk in stream) {
-          bytes.addAll(chunk);
-        }
-        if (bytes.isEmpty) {
-          log.warning('Pasted empty file: $file (${formats[format]})');
-          return;
-        }
-
-        String extension;
-        if (file.fileName != null) {
-          extension = file.fileName!.substring(file.fileName!.lastIndexOf('.'));
-        } else {
-          extension = formats[format]!;
-        }
-
-        photoInfos.add((
-          bytes: Uint8List.fromList(bytes),
-          extension: extension,
-        ));
-      });
-      if (progress != null) progresses.add(progress);
-    }
-
-    while (progresses.isNotEmpty) {
-      progresses.removeWhere((progress) => progress.fraction.value == 1);
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
-
-    await _pickPhotos(photoInfos);
-  }
+  /// Pastes what was copied last, in Saber or in another app.
+  Future paste() => _pasteFromClipboard();
 
   Future exportAsPdf(BuildContext context) async {
     final pdf = await EditorExporter.generatePdf(coreInfo, context);

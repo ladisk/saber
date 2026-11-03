@@ -30,6 +30,11 @@ abstract final class SelectionClipboard {
 
   static bool get isEmpty => _strokes.isEmpty && _images.isEmpty;
 
+  /// Marks the system clipboard as holding the current copy,
+  /// so a paste can tell whether something newer was copied since.
+  static String? get token => _token;
+  static String? _token;
+
   /// Copies the items in [selection], which is on a page of [filePath].
   ///
   /// [cut] means the items are removed afterwards,
@@ -50,6 +55,7 @@ abstract final class SelectionClipboard {
     _path = selection.path.shift(Offset.zero);
     _source = cut ? null : (filePath: filePath, pageIndex: selection.pageIndex);
     _pastesOnSource = 0;
+    _token = '${DateTime.now().microsecondsSinceEpoch}';
   }
 
   /// Returns new copies of the items for page [pageIndex] of [filePath].
@@ -101,5 +107,6 @@ abstract final class SelectionClipboard {
     _assets = const [];
     _path = Path();
     _source = null;
+    _token = null;
   }
 }
