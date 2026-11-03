@@ -21,9 +21,21 @@ class PreviewCard extends StatefulWidget {
     required this.toggleSelection,
     required this.selected,
     required this.isAnythingSelected,
+    this.showFolder = false,
   }) : super(key: ValueKey('PreviewCard$filePath'));
 
   final String filePath;
+
+  /// Whether to show the note's folder under its title,
+  /// e.g. in search results from all folders.
+  final bool showFolder;
+
+  /// The folder of [filePath] without the leading slash, or `/` at the root.
+  static String folderOf(String filePath) {
+    final folder = filePath.substring(0, filePath.lastIndexOf('/'));
+    return folder.isEmpty ? '/' : folder.substring(1);
+  }
+
   final bool selected;
   final bool isAnythingSelected;
   final void Function(String, bool) toggleSelection;
@@ -209,10 +221,38 @@ class _PreviewCardState extends State<PreviewCard> {
             ),
             Padding(
               padding: const .all(8),
-              child: Text(
-                widget.filePath.substring(widget.filePath.lastIndexOf('/') + 1),
-                maxLines: 2,
-                overflow: .ellipsis,
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Text(
+                    widget.filePath.substring(
+                      widget.filePath.lastIndexOf('/') + 1,
+                    ),
+                    maxLines: 2,
+                    overflow: .ellipsis,
+                  ),
+                  if (widget.showFolder)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            PreviewCard.folderOf(widget.filePath),
+                            key: const ValueKey('PreviewCardFolder'),
+                            maxLines: 1,
+                            overflow: .ellipsis,
+                            style: TextTheme.of(context).bodySmall
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
             ),
           ],
