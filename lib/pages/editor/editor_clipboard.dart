@@ -31,6 +31,29 @@ const _pastableImages = <SimpleFileFormat, String>{
 /// that drop [_selectionFormat].
 Uint8List? _copiedPng;
 
+/// Where the mouse is over the pages, in global coordinates,
+/// or null if it is elsewhere (e.g. on the toolbar).
+Offset? _mousePosition;
+
+/// The page to paste onto and the [position] on it to paste at.
+///
+/// [underMouse] means [position] is under the mouse,
+/// rather than the middle of what is visible of the page.
+class _PasteTarget {
+  const new({
+    required this.pageIndex,
+    required this.position,
+    this.underMouse = false,
+  });
+
+  final int pageIndex;
+  final Offset position;
+  final bool underMouse;
+
+  /// How far each of several pasted images is moved from the previous one.
+  static const step = Offset(25, 25);
+}
+
 /// Copies to and pastes from the system clipboard.
 ///
 /// Kept out of `editor.dart` so that upstream changes to it
@@ -57,10 +80,111 @@ extension _EditorClipboard on EditorState {
     }
   }
 
+  /// Tracks the mouse over [child], the pages, so a paste can go under it.
+  Widget _trackMouse(Widget child) => MouseRegion(
+    opaque: false,
+    onHover: (event) => _mousePosition = event.position,
+    onExit: (_) => _mousePosition = null,
+    child: child,
+  );
+
+  /// Where to paste: under the mouse if it is over a page, otherwise the
+  /// middle of the page in the middle of the screen. Using the page at the
+  /// top of the screen ([currentPageIndex]) would paste onto the previous
+  /// page whenever a strip of it is still showing.
+  _PasteTarget _pasteTarget() {
+    final mouse = _mousePosition;
+    if (mouse != null) {
+      final pageIndex = onWhichPageIsFocalPoint(mouse);
+      if (pageIndex != null) {
+        return _PasteTarget(
+          pageIndex: pageIndex,
+          position: coreInfo.pages[pageIndex].renderBox!.globalToLocal(mouse),
+          underMouse: true,
+        );
+      }
+    }
+
+    final view = _canvasGestureDetectorKey.currentContext?.findRenderObject();
+    if (view is RenderBox && view.hasSize) {
+      final viewRect = view.localToGlobal(.zero) & view.size;
+      _PasteTarget? best;
+      var bestArea = 0.0;
+      for (var i = 0; i < coreInfo.pages.length; ++i) {
+        final page = coreInfo.pages[i];
+        final box = page.renderBox;
+        if (box == null || !box.attached || !box.hasSize) continue;
+        final pageRect = Rect.fromPoints(
+          box.localToGlobal(.zero),
+          box.localToGlobal(page.size.bottomRight(.zero)),
+        );
+        final visible = pageRect.intersect(viewRect);
+        if (visible.width <= 0 || visible.height <= 0) continue;
+
+        final target = _PasteTarget(
+          pageIndex: i,
+          position: box.globalToLocal(visible.center),
+        );
+        if (pageRect.contains(viewRect.center)) return target;
+        final area = visible.width * visible.height;
+        if (area > bestArea) (best, bestArea) = (target, area);
+      }
+      if (best != null) return best;
+    }
+
+    final pageIndex = currentPageIndex;
+    return _PasteTarget(
+      pageIndex: pageIndex,
+      position: coreInfo.pages[pageIndex].size.center(.zero),
+    );
+  }
+
+  /// Moves the just pasted [selection] so that its centre is at [centre].
+  void _centreSelection(SelectResult selection, Offset centre) {
+    final offset = centre - selection.path.getBounds().center;
+    for (final stroke in selection.strokes) {
+      stroke.shift(offset);
+    }
+    for (final image in selection.images) {
+      image.dstRect = image.dstRect.shift(offset);
+    }
+    selection.path = selection.path.shift(offset);
+  }
+
+  /// Centres [image] at [centre] once it has loaded and knows its size,
+  /// keeping it on its page.
+  void _centreWhenLoaded(EditorImage image, Offset centre) {
+    void onChange() {
+      if (image.dstRect.isEmpty) return;
+      image.removeListener(onChange);
+
+      final pageSize = coreInfo.pages[image.pageIndex].size;
+      final size = image.dstRect.size;
+      image.dstRect =
+          Offset(
+            (centre.dx - size.width / 2).clamp(
+              0,
+              max(0, pageSize.width - size.width),
+            ),
+            (centre.dy - size.height / 2).clamp(
+              0,
+              max(0, pageSize.height - size.height),
+            ),
+          ) &
+          size;
+      autosaveAfterDelay();
+    }
+
+    image.addListener(onChange);
+  }
+
   /// Pastes whatever was copied last, here or in another app:
   /// a Saber selection, images, a pdf, or text.
   Future<void> _pasteFromClipboard() async {
     if (coreInfo.readOnly) return;
+
+    // decided before reading the clipboard, while the mouse is still there
+    final target = _pasteTarget();
 
     // a text field such as the note title pastes into itself
     final focusContext = FocusManager.instance.primaryFocus?.context;
@@ -72,17 +196,17 @@ extension _EditorClipboard on EditorState {
 
     final reader = await SystemClipboard.instance?.read();
     if (reader == null) {
-      if (!typing) pasteSelection();
+      if (!typing) _pasteSelection(target);
       return;
     }
 
     if (!typing && await _clipboardHasSelection(reader)) {
-      return pasteSelection();
+      return _pasteSelection(target);
     }
 
     final photos = await _readClipboardImages(reader);
     if (photos.isNotEmpty) {
-      await _pickPhotos(photos);
+      await _pickPhotos(photos, target);
       return;
     }
     if (typing) return;
@@ -104,9 +228,11 @@ extension _EditorClipboard on EditorState {
     }
 
     final text = await reader.readValue(Formats.plainText);
-    if (text != null && text.trim().isNotEmpty) return _pasteText(text);
+    if (text != null && text.trim().isNotEmpty) {
+      return _pasteText(text, target.pageIndex);
+    }
 
-    if (!SelectionClipboard.isEmpty) return pasteSelection();
+    if (!SelectionClipboard.isEmpty) return _pasteSelection(target);
 
     if (mounted) {
       ScaffoldMessenger.of(context)
@@ -185,9 +311,8 @@ extension _EditorClipboard on EditorState {
     return completer.future;
   }
 
-  /// Adds [text] to the end of the current page's text.
-  void _pasteText(String text) {
-    final pageIndex = currentPageIndex;
+  /// Adds [text] to the end of the text of page [pageIndex].
+  void _pasteText(String text, int pageIndex) {
     createPage(pageIndex);
     final controller = coreInfo.pages[pageIndex].quill.controller;
 

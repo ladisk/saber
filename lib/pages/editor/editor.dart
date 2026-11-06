@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' show max;
+import 'dart:math' show max, min;
 
 import 'package:collapsible/collapsible.dart';
 import 'package:collection/collection.dart';
@@ -70,6 +70,7 @@ import 'package:sbn/change.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 part 'editor_clipboard.dart';
+part 'editor_image_drop.dart';
 
 typedef _PhotoInfo = ({Uint8List bytes, String extension});
 
@@ -1731,10 +1732,15 @@ class EditorState extends State<Editor> {
   /// Returns the number of photos picked.
   ///
   /// If [photoInfos] is provided, it will be used instead of the file picker.
-  Future<int> _pickPhotos([List<_PhotoInfo>? photoInfos]) async {
+  /// The photos go onto [target], or by default where [_pasteTarget] says.
+  Future<int> _pickPhotos([
+    List<_PhotoInfo>? photoInfos,
+    _PasteTarget? target,
+  ]) async {
     if (coreInfo.readOnly) return 0;
 
-    final currentPageIndex = this.currentPageIndex;
+    target ??= _pasteTarget();
+    final currentPageIndex = target.pageIndex;
 
     photoInfos ??= await _pickPhotosWithFilePicker();
     if (photoInfos.isEmpty) return 0;
@@ -1771,6 +1777,13 @@ class EditorState extends State<Editor> {
             assetCache: coreInfo.assetCache,
           ),
     ];
+
+    for (var i = 0; i < images.length; ++i) {
+      _centreWhenLoaded(
+        images[i],
+        target.position + _PasteTarget.step * i.toDouble(),
+      );
+    }
 
     history.recordChange(HistoricAdd(strokes: const [], images: images));
     createPage(currentPageIndex);
@@ -1924,11 +1937,15 @@ class EditorState extends State<Editor> {
     if (mounted && !SelectionClipboard.isEmpty) deleteSelection();
   }
 
-  /// Pastes the copied selection onto the current page and selects it.
-  void pasteSelection() {
+  /// Pastes the copied selection onto the page given by [_pasteTarget]
+  /// and selects it.
+  void pasteSelection() => _pasteSelection();
+
+  void _pasteSelection([_PasteTarget? target]) {
     if (coreInfo.readOnly || SelectionClipboard.isEmpty) return;
 
-    final pageIndex = currentPageIndex;
+    target ??= _pasteTarget();
+    final pageIndex = target.pageIndex;
     createPage(pageIndex);
     final page = coreInfo.pages[pageIndex];
 
@@ -1937,6 +1954,7 @@ class EditorState extends State<Editor> {
       pageIndex: pageIndex,
       assetCache: coreInfo.assetCache,
     );
+    if (target.underMouse) _centreSelection(pasted, target.position);
     for (final image in pasted.images) {
       image
         ..id = coreInfo.nextImageId++
@@ -2031,44 +2049,46 @@ class EditorState extends State<Editor> {
         stows.editorToolbarAlignment.value == AxisDirection.left ||
         stows.editorToolbarAlignment.value == AxisDirection.right;
 
-    final Widget canvasGestureDetector = CanvasGestureDetector(
-      key: _canvasGestureDetectorKey,
-      filePath: coreInfo.filePath,
-      isDrawGesture: isDrawGesture,
-      onInteractionEnd: onInteractionEnd,
-      onDrawStart: onDrawStart,
-      onDrawUpdate: onDrawUpdate,
-      onDrawEnd: onDrawEnd,
-      onHovering: onHovering,
-      onHoveringEnd: onHoveringEnd,
-      onStylusButtonChanged: onStylusButtonChanged,
-      updatePointerData: updatePointerData,
-      undo: undo,
-      redo: redo,
-      pages: coreInfo.pages,
-      initialPageIndex: coreInfo.initialPageIndex,
-      pageBuilder: pageBuilder,
-      isTextEditing: () => currentTool == Tool.textEditing,
-      pageOnTop: currentTool is Select
-          ? (currentTool as Select).selectResult.pageIndex
-          : null,
-      placeholderPageBuilder: (BuildContext context, int pageIndex) {
-        return Canvas(
-          path: coreInfo.filePath,
-          page: coreInfo.pages[pageIndex],
-          pageIndex: 0,
-          textEditing: false,
-          coreInfo: EditorCoreInfo.placeholder,
-          currentStroke: null,
-          currentStrokeDetectedShape: null,
-          currentSelection: null,
-          placeholder: true,
-          setAsBackground: null,
-          currentTool: currentTool,
-          currentScale: double.minPositive,
-        );
-      },
-      transformationController: _transformationController,
+    final Widget canvasGestureDetector = _trackMouse(
+      CanvasGestureDetector(
+        key: _canvasGestureDetectorKey,
+        filePath: coreInfo.filePath,
+        isDrawGesture: isDrawGesture,
+        onInteractionEnd: onInteractionEnd,
+        onDrawStart: onDrawStart,
+        onDrawUpdate: onDrawUpdate,
+        onDrawEnd: onDrawEnd,
+        onHovering: onHovering,
+        onHoveringEnd: onHoveringEnd,
+        onStylusButtonChanged: onStylusButtonChanged,
+        updatePointerData: updatePointerData,
+        undo: undo,
+        redo: redo,
+        pages: coreInfo.pages,
+        initialPageIndex: coreInfo.initialPageIndex,
+        pageBuilder: pageBuilder,
+        isTextEditing: () => currentTool == Tool.textEditing,
+        pageOnTop: currentTool is Select
+            ? (currentTool as Select).selectResult.pageIndex
+            : null,
+        placeholderPageBuilder: (BuildContext context, int pageIndex) {
+          return Canvas(
+            path: coreInfo.filePath,
+            page: coreInfo.pages[pageIndex],
+            pageIndex: 0,
+            textEditing: false,
+            coreInfo: EditorCoreInfo.placeholder,
+            currentStroke: null,
+            currentStrokeDetectedShape: null,
+            currentSelection: null,
+            placeholder: true,
+            setAsBackground: null,
+            currentTool: currentTool,
+            currentScale: double.minPositive,
+          );
+        },
+        transformationController: _transformationController,
+      ),
     );
 
     final Widget canvas = Stack(
@@ -2482,6 +2502,7 @@ class EditorState extends State<Editor> {
         autosaveAfterDelay();
         setState(() {});
       },
+      onDropImage: _dropImage,
       currentTool: currentTool,
       currentScale: _transformationController.value.approxScale,
     );
