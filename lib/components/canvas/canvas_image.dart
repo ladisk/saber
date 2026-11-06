@@ -10,6 +10,17 @@ import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 
+/// Called when an image dragged from [startRect] is dropped at [droppedAt],
+/// having been grabbed at [grabbedAt] (both global positions).
+/// Returns whether it handled the drop, e.g. by moving the image
+/// to the page it was dropped on.
+typedef ImageDropCallback = bool Function(
+  EditorImage image,
+  Rect startRect,
+  Offset grabbedAt,
+  Offset droppedAt,
+);
+
 class CanvasImage extends StatefulHookWidget {
   new({
     required this.filePath,
@@ -17,6 +28,7 @@ class CanvasImage extends StatefulHookWidget {
     this.overrideBoxFit,
     required this.pageSize,
     required this.setAsBackground,
+    this.onDropImage,
     this.isBackground = false,
     this.readOnly = false,
     this.selected = false,
@@ -28,6 +40,7 @@ class CanvasImage extends StatefulHookWidget {
   final BoxFit? overrideBoxFit;
   final Size pageSize;
   final void Function(EditorImage image)? setAsBackground;
+  final ImageDropCallback? onDropImage;
   final bool isBackground;
   final bool readOnly;
   final bool selected;
@@ -73,6 +86,9 @@ class _CanvasImageState extends State<CanvasImage> {
 
   Rect panStartRect = .zero;
   Offset panStartPosition = .zero;
+
+  /// Where a drag of the image started and is now, in global coordinates.
+  Offset? _dragStart, _dragEnd;
 
   @override
   void initState() {
@@ -125,10 +141,12 @@ class _CanvasImageState extends State<CanvasImage> {
               onPanStart: active
                   ? (details) {
                       panStartRect = widget.image.dstRect;
+                      _dragStart = _dragEnd = details.globalPosition;
                     }
                   : null,
               onPanUpdate: active
                   ? (details) {
+                      _dragEnd = details.globalPosition;
                       setState(() {
                         final fivePercent = min(
                           widget.pageSize.width * 0.05,
@@ -155,6 +173,20 @@ class _CanvasImageState extends State<CanvasImage> {
                   : null,
               onPanEnd: active
                   ? (details) {
+                      final (dragStart, dragEnd) = (_dragStart, _dragEnd);
+                      _dragStart = _dragEnd = null;
+                      if (dragStart != null &&
+                          dragEnd != null &&
+                          (widget.onDropImage?.call(
+                                widget.image,
+                                panStartRect,
+                                dragStart,
+                                dragEnd,
+                              ) ??
+                              false)) {
+                        panStartRect = .zero;
+                        return;
+                      }
                       if (panStartRect == widget.image.dstRect) return;
                       widget.image.onMoveImage?.call(
                         widget.image,
