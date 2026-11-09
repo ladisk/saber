@@ -27,6 +27,7 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/ladisk_logo.dart';
 import 'package:saber/components/canvas/line_type.dart';
+import 'package:saber/components/canvas/quill_click_to_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/tool_palette.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
@@ -2202,6 +2203,7 @@ class EditorState extends State<Editor> {
           toggleTextEditing: () => setState(() {
             if (currentTool == Tool.textEditing) {
               currentTool = Pen.currentPen;
+              QuillClickToType.removeUnusedPadding();
               for (final page in coreInfo.pages) {
                 // unselect text, but maintain cursor position
                 page.quill.controller.moveCursorToPosition(
@@ -2211,7 +2213,8 @@ class EditorState extends State<Editor> {
               }
             } else {
               currentTool = Tool.textEditing;
-              quillFocus.value = coreInfo.pages[currentPageIndex].quill
+              // the page in the middle of the screen, not the one at its top
+              quillFocus.value = coreInfo.pages[_pasteTarget().pageIndex].quill
                 ..focusNode.requestFocus();
             }
           }),
