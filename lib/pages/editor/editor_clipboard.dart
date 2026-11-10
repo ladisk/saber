@@ -40,15 +40,14 @@ Offset? _mousePosition;
 /// [underMouse] means [position] is under the mouse,
 /// rather than the middle of what is visible of the page.
 class _PasteTarget {
-  const new({
-    required this.pageIndex,
-    required this.position,
-    this.underMouse = false,
-  });
+  const new({required this.pageIndex, required this.position, this.mouse});
 
   final int pageIndex;
   final Offset position;
-  final bool underMouse;
+
+  /// Where the mouse is on screen, if [position] is under it.
+  final Offset? mouse;
+  bool get underMouse => mouse != null;
 
   /// How far each of several pasted images is moved from the previous one.
   static const step = Offset(25, 25);
@@ -100,7 +99,7 @@ extension _EditorClipboard on EditorState {
         return _PasteTarget(
           pageIndex: pageIndex,
           position: coreInfo.pages[pageIndex].renderBox!.globalToLocal(mouse),
-          underMouse: true,
+          mouse: mouse,
         );
       }
     }
@@ -229,7 +228,7 @@ extension _EditorClipboard on EditorState {
 
     final text = await reader.readValue(Formats.plainText);
     if (text != null && text.trim().isNotEmpty) {
-      return _pasteText(text, target.pageIndex);
+      return _pasteText(text, target);
     }
 
     if (!SelectionClipboard.isEmpty) return _pasteSelection(target);
@@ -311,19 +310,15 @@ extension _EditorClipboard on EditorState {
     return completer.future;
   }
 
-  /// Adds [text] to the end of the text of page [pageIndex].
-  void _pasteText(String text, int pageIndex) {
-    createPage(pageIndex);
-    final controller = coreInfo.pages[pageIndex].quill.controller;
-
-    // the document always ends with a newline
-    final end = controller.document.length - 1;
-    final insert = end > 0 ? '\n$text' : text;
-    controller.replaceText(
-      end,
-      0,
-      insert,
-      TextSelection.collapsed(offset: end + insert.length),
+  /// Adds [text] to the text of the [target] page: under the mouse,
+  /// or at the end of the text.
+  void _pasteText(String text, _PasteTarget target) {
+    createPage(target.pageIndex);
+    QuillClickToType.insertAt(
+      coreInfo.pages[target.pageIndex].quill,
+      text,
+      target.mouse,
+      lineHeight: coreInfo.lineHeight,
     );
   }
 }

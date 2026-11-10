@@ -130,6 +130,7 @@ class Canvas extends StatelessWidget {
                       currentSelection: currentSelection,
                       setAsBackground: setAsBackground,
                       onDropImage: onDropImage,
+                      clickToType: !placeholder,
                       currentToolIsSelect: currentTool.toolId == ToolId.select,
                       currentScale: currentScale,
                     ),

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:defer_pointer/defer_pointer.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
@@ -7,7 +10,9 @@ import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/quill_click_to_type.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -29,6 +34,7 @@ class InnerCanvas extends StatefulWidget {
     required this.currentSelection,
     this.setAsBackground,
     this.onDropImage,
+    this.clickToType = false,
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
     required this.currentScale,
@@ -46,6 +52,10 @@ class InnerCanvas extends StatefulWidget {
   final SelectResult? currentSelection;
   final void Function(EditorImage image)? setAsBackground;
   final ImageDropCallback? onDropImage;
+
+  /// Whether tapping beside or below the text starts typing there
+  /// (see [QuillClickToType]). Only one canvas per page may do this.
+  final bool clickToType;
   final ValueChanged<RenderObject>? onRenderObjectChange;
 
   final bool currentToolIsSelect;
@@ -85,6 +95,9 @@ class _InnerCanvasState extends State<InnerCanvas> {
                 lineHeight: widget.coreInfo.lineHeight,
               ),
               scrollable: false,
+              editorKey: widget.clickToType
+                  ? QuillClickToType.editorKeyOf(page.quill)
+                  : null,
               autoFocus: false,
               expands: true,
               placeholder: widget.textEditing
@@ -167,7 +180,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   height: widget.height,
                   child: IgnorePointer(
                     ignoring: widget.coreInfo.readOnly || !widget.textEditing,
-                    child: quillEditor,
+                    child: widget.clickToType
+                        ? _ClickToType(
+                            quill: page.quill,
+                            lineHeight: widget.coreInfo.lineHeight,
+                            child: quillEditor!,
+                          )
+                        : quillEditor,
                   ),
                 ),
                 for (int i = 0; i < page.images.length; i++)
@@ -192,4 +211,46 @@ class _InnerCanvasState extends State<InnerCanvas> {
       ),
     );
   }
+}
+
+/// Starts typing where the text is tapped, even beside or below it.
+class _ClickToType extends StatefulWidget {
+  const new({
+    required this.quill,
+    required this.lineHeight,
+    required this.child,
+  });
+
+  final QuillStruct quill;
+  final int lineHeight;
+  final Widget child;
+
+  @override
+  State<_ClickToType> createState() => _ClickToTypeState();
+}
+
+class _ClickToTypeState extends State<_ClickToType> {
+  Offset? _down;
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (event) => _down = event.position,
+    onPointerUp: (event) {
+      final down = _down;
+      _down = null;
+      if (down == null || (event.position - down).distance > kTouchSlop) {
+        return;
+      }
+      // after the editor has put the cursor where it can
+      scheduleMicrotask(() {
+        if (!mounted || !widget.quill.focusNode.hasFocus) return;
+        QuillClickToType.moveCursorTo(
+          widget.quill,
+          event.position,
+          lineHeight: widget.lineHeight,
+        );
+      });
+    },
+    child: widget.child,
+  );
 }
