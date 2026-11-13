@@ -1,4 +1,5 @@
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/editor/scratch_layer.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/pages/editor/editor.dart';
@@ -73,6 +74,17 @@ extension EditorForkHistory on EditorState {
         for (final MapEntry(key: stroke, value: change)
             in historic.lineTypeChanges.entries) {
           stroke.lineType = change.previous;
+        }
+
+      case (final HistoricScratch historic):
+        for (final (page, stroke) in historic.strokes) {
+          final strokes = ScratchLayer.strokesOf(page);
+          if (historic.added) {
+            strokes.remove(stroke);
+          } else {
+            strokes.add(stroke);
+          }
+          page.redrawStrokes();
         }
     }
   }

@@ -5,6 +5,7 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
+import 'package:saber/components/canvas/scratch_layer_view.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -109,7 +110,9 @@ class Canvas extends StatelessWidget {
             ],
           ),
           child: !placeholder
-              ? SizedBox(
+              ? ScratchLayerView(
+                  page: page,
+                  currentScale: currentScale,
                   width: page.size.width,
                   height: page.size.height,
                   child: OnyxSdkPenArea(

@@ -47,6 +47,7 @@ import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/pin.dart';
+import 'package:saber/data/editor/scratch_layer.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_export.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
@@ -76,6 +77,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 part 'editor_clipboard.dart';
 part 'editor_image_drop.dart';
 part 'editor_pins.dart';
+part 'editor_scratch.dart';
 
 class const _PhotoInfo(final Uint8List bytes, final String extension);
 
@@ -649,6 +651,8 @@ class EditorState extends State<Editor> {
         dragPageIndex!,
         currentPressure,
       );
+    } else if (currentTool is Eraser && scratch.isOn) {
+      _eraseScratch(position, page);
     } else if (currentTool is Eraser) {
       for (final stroke in (currentTool as Eraser).checkForOverlappingStrokes(
         position,
@@ -717,6 +721,8 @@ class EditorState extends State<Editor> {
     if (currentTool is Pen) {
       (currentTool as Pen).onDragUpdate(position, currentPressure);
       page.redrawStrokes();
+    } else if (currentTool is Eraser && scratch.isOn) {
+      _eraseScratch(position, page);
     } else if (currentTool is Eraser) {
       for (final stroke in (currentTool as Eraser).checkForOverlappingStrokes(
         position,
@@ -882,6 +888,7 @@ class EditorState extends State<Editor> {
           newStroke.convertToLine();
         }
 
+        if (scratch.isOn) return _addScratchStroke(page, newStroke);
         createPage(newStroke.pageIndex);
         page.insertStroke(newStroke);
         history.recordChange(HistoricAdd(strokes: [newStroke], images: []));
@@ -896,6 +903,7 @@ class EditorState extends State<Editor> {
           currentTool = _lastNonEraserTool;
         }
         if (erased.isEmpty) return;
+        if (scratch.isOn) return _recordScratchErase(page, erased);
         history.recordChange(HistoricDelete(strokes: erased, images: []));
       } else if (currentTool is Select) {
         final select = currentTool as Select;
@@ -1518,6 +1526,7 @@ class EditorState extends State<Editor> {
               ),
           ],
         ),
+        _scratchPaletteGroup(),
       ],
     ];
   }
@@ -2140,6 +2149,7 @@ class EditorState extends State<Editor> {
               visible ? const LadiskLogo() : const SizedBox.shrink(),
         ),
         _pinLayer(),
+        _scratchFrame(),
         if (!coreInfo.readOnly)
           Positioned.fill(
             child: ValueListenableBuilder(

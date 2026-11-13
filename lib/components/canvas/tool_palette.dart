@@ -9,6 +9,7 @@ class ToolPaletteItem {
     required this.onSelected,
     this.selected = false,
     this.isColor = false,
+    this.enabled = true,
   });
 
   final Widget icon;
@@ -18,6 +19,9 @@ class ToolPaletteItem {
 
   /// Color buttons are drawn smaller, with a ring when selected.
   final bool isColor;
+
+  /// Disabled buttons are dimmed and can't be tapped.
+  final bool enabled;
 }
 
 /// A run of related buttons on the [ToolPalette].
@@ -291,9 +295,14 @@ class _Button extends StatelessWidget {
             : Colors.transparent,
         clipBehavior: .antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: item.enabled ? onTap : null,
           child: IconTheme.merge(
-            data: IconThemeData(color: colorScheme.onSurface, size: 20),
+            data: IconThemeData(
+              color: item.enabled
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurface.withValues(alpha: 0.38),
+              size: 20,
+            ),
             child: Stack(
               children: [
                 Center(child: item.icon),

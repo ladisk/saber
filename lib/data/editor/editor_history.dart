@@ -93,7 +93,7 @@ class EditorHistory {
   /// This does not modify the history stacks, but allows us to know
   /// whether the current state is saved or not.
   void markLastChangeAsSaved() {
-    _lastSaved = _past.lastOrNull;
+    _lastSaved = _lastSavable;
   }
 
   /// Whether the current state is saved to disk.
@@ -102,7 +102,7 @@ class EditorHistory {
   /// not whether _past is empty. This is because _past items can be discarded
   /// if the history exceeds [maxHistoryLength].
   bool get isCurrentStateSaved {
-    return _past.lastOrNull == _lastSaved;
+    return _lastSavable == _lastSaved;
   }
 
   /// Removes the last history item due to a rejected stroke.

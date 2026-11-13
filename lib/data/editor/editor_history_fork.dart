@@ -99,6 +99,18 @@ class const HistoricLineTypeChange({
   );
 }
 
+/// Scratch [strokes] were drawn, or erased if not [added].
+///
+/// Scratch strokes are never saved, so these don't make the note unsaved
+/// (see [EditorHistoryFork._lastSavable]).
+class const HistoricScratch({
+  required final List<(EditorPage, Stroke)> strokes,
+  required final bool added,
+}) extends HistoricFork {
+  @override
+  HistoricScratch reverse() => .new(strokes: strokes, added: !added);
+}
+
 /// Never in the history, so the note counts as unsaved while
 /// [EditorHistory._lastSaved] is this.
 const _unsavedMarker = HistoricLineTypeChange(lineTypeChanges: {});
@@ -108,4 +120,18 @@ extension EditorHistoryFork on EditorHistory {
   /// for changes that can't be undone, like moving a pin.
   /// The next save marks it as saved again.
   void markUnsaved() => _lastSaved = _unsavedMarker;
+
+  /// The last change that is saved with the note, skipping [HistoricScratch].
+  Historic? get _lastSavable {
+    for (final historic in _past.reversed) {
+      if (historic is! HistoricScratch) return historic;
+    }
+    return null;
+  }
+
+  /// Forgets every [HistoricScratch], after the scratch layer is cleared.
+  void removeScratchHistory() {
+    _past.removeWhere((historic) => historic is HistoricScratch);
+    _future.removeWhere((historic) => historic is HistoricScratch);
+  }
 }
