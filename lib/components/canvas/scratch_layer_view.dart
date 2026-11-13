@@ -42,11 +42,8 @@ class ScratchLayerView extends StatelessWidget {
 }
 
 class _ScratchPainter extends CustomPainter {
-  new({
-    required this.page,
-    required this.invert,
-    required this.currentScale,
-  }) : super(repaint: page);
+  new({required this.page, required this.invert, required this.currentScale})
+    : super(repaint: page);
 
   final EditorPage page;
   final bool invert;
