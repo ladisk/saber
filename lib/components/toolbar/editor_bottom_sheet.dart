@@ -335,6 +335,15 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                 onChanged: (value) => stows.showLadiskLogo.value = value!,
               ),
             ),
+            ValueListenableBuilder(
+              valueListenable: stows.fitPageWidth,
+              builder: (context, fit, _) => CheckboxListTile.adaptive(
+                value: fit,
+                // English only: this fork doesn't regenerate translations.
+                title: const Text('Fit page width'),
+                onChanged: (value) => stows.fitPageWidth.value = value!,
+              ),
+            ),
             if (stows.loggedIn) ...[
               StatefulBuilder(
                 builder: (context, setState) {

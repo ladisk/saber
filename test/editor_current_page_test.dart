@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/flavor_config.dart';
 import 'package:saber/pages/editor/editor.dart';
 
 void main() {
+  FlavorConfig.setup();
   group('getPageIndexFromScrollPosition', () {
     final pages = <EditorPage>[
       EditorPage(size: const Size(100, 100)),

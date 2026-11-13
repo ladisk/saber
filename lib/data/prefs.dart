@@ -410,6 +410,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether pages fill the editor width at 1.0x zoom (see page_fit.dart).
+  final fitPageWidth = PlainStow(
+    'fitPageWidth',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final homeLayout = PlainStow(
     'homeLayout',
     HomeLayout.masonryGrid,

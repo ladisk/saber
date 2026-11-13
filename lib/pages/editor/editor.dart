@@ -27,6 +27,7 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/ladisk_logo.dart';
 import 'package:saber/components/canvas/line_type.dart';
+import 'package:saber/components/canvas/page_fit.dart';
 import 'package:saber/components/canvas/quill_click_to_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/tool_palette.dart';
@@ -125,6 +126,10 @@ class EditorState extends State<Editor> {
 
   final _canvasGestureDetectorKey = GlobalKey<CanvasGestureDetectorState>();
   final _transformationController = TransformationController();
+  double get _pageAreaWidth => pageAreaWidth(
+    context,
+    _canvasGestureDetectorKey.currentState?.containerBounds,
+  );
   double get scrollY {
     final transformation = _transformationController.value;
     final scale = transformation.approxScale;
@@ -205,6 +210,7 @@ class EditorState extends State<Editor> {
   @override
   void initState() {
     DynamicMaterialApp.addFullscreenListener(_setState);
+    stows.fitPageWidth.addListener(_onFitPageWidthChanged);
 
     _initAsync();
     _assignKeybindings();
@@ -343,12 +349,12 @@ class EditorState extends State<Editor> {
       late final topOfLastPage = -CanvasGestureDetector.getTopOfPage(
         pageIndex: coreInfo.pages.length - 1,
         pages: coreInfo.pages,
-        screenWidth: MediaQuery.sizeOf(context).width,
+        screenWidth: _pageAreaWidth,
       );
       final bottomOfLastPage = -CanvasGestureDetector.getTopOfPage(
         pageIndex: coreInfo.pages.length,
         pages: coreInfo.pages,
-        screenWidth: MediaQuery.sizeOf(context).width,
+        screenWidth: _pageAreaWidth,
       );
 
       if (scrollY < bottomOfLastPage) {
@@ -2363,7 +2369,7 @@ class EditorState extends State<Editor> {
                       CanvasGestureDetector.scrollToPage(
                         pageIndex: currentPageIndex + 1,
                         pages: coreInfo.pages,
-                        screenWidth: MediaQuery.sizeOf(context).width,
+                        screenWidth: _pageAreaWidth,
                         transformationController: _transformationController,
                       );
                     }),
@@ -2677,11 +2683,22 @@ class EditorState extends State<Editor> {
 
   late int _lastCurrentPageIndex = coreInfo.initialPageIndex ?? 0;
 
+  /// Keeps the same page in view at 1.0x when "Fit page width" changes.
+  /// [_lastCurrentPageIndex] still holds the page found with the old rule.
+  void _onFitPageWidthChanged() => setState(() {
+    CanvasGestureDetector.scrollToPage(
+      pageIndex: _lastCurrentPageIndex,
+      pages: coreInfo.pages,
+      screenWidth: _pageAreaWidth,
+      transformationController: _transformationController,
+    );
+  });
+
   /// The index of the page that is currently centered on screen.
   int get currentPageIndex {
     if (!mounted) return _lastCurrentPageIndex;
 
-    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenWidth = _pageAreaWidth;
 
     return _lastCurrentPageIndex = getPageIndexFromScrollPosition(
       scrollY: -scrollY,
@@ -2716,6 +2733,7 @@ class EditorState extends State<Editor> {
     unawaited(_cleanUpAsync());
 
     DynamicMaterialApp.removeFullscreenListener(_setState);
+    stows.fitPageWidth.removeListener(_onFitPageWidthChanged);
 
     _delayedSaveTimer?.cancel();
     _watchServerTimer?.cancel();

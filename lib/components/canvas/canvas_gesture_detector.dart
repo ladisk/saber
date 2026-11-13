@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/components/canvas/multi_finger_tap_detector.dart';
+import 'package:saber/components/canvas/page_fit.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
@@ -96,7 +97,7 @@ class CanvasGestureDetector extends StatefulWidget {
 
       /// Since we use a FittedBox, the actual width of the page
       /// is the minimum of the page width and the screen width.
-      final pageWidthFitted = min(pageSize.width, screenWidth);
+      final pageWidthFitted = fittedPageWidth(pageSize, screenWidth);
 
       top += 16;
       top += pageSize.height * (pageWidthFitted / pageSize.width);
@@ -138,7 +139,7 @@ class CanvasGestureDetector extends StatefulWidget {
 
       /// Since we use a FittedBox, the actual width of the page
       /// is the minimum of the page width and the screen width.
-      final pageWidthFitted = min(pageSize.width, screenWidth);
+      final pageWidthFitted = fittedPageWidth(pageSize, screenWidth);
 
       top += 16;
       top += pageSize.height * (pageWidthFitted / pageSize.width);
@@ -345,7 +346,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       CanvasGestureDetector.scrollToPage(
         pageIndex: widget.initialPageIndex!,
         pages: widget.pages,
-        screenWidth: MediaQuery.sizeOf(context).width,
+        screenWidth: pageAreaWidth(context, containerBounds),
         transformationController: widget._transformationController,
       );
     }
@@ -637,8 +638,8 @@ class _PagesBuilder extends StatelessWidget {
     double topOfPage = Editor.gapBetweenPages * 2;
     for (int pageIndex = 0; pageIndex < pages.length; pageIndex++) {
       final page = pages[pageIndex];
-      final pageWidth = min(
-        page.size.width,
+      final pageWidth = fittedPageWidth(
+        page.size,
         containerWidth,
       ); // because of FittedBox
       final pageHeight = pageWidth / page.size.width * page.size.height;
@@ -652,9 +653,13 @@ class _PagesBuilder extends StatelessWidget {
       page.isRendered = shouldRender;
       if (pageIndex == pageOnTop) childOnTop = children.length;
       children.add(
-        shouldRender
-            ? pageBuilder(context, pageIndex)
-            : placeholderPageBuilder(context, pageIndex),
+        fitPageToWidth(
+          pageSize: page.size,
+          width: pageWidth,
+          page: shouldRender
+              ? pageBuilder(context, pageIndex)
+              : placeholderPageBuilder(context, pageIndex),
+        ),
       );
 
       children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
