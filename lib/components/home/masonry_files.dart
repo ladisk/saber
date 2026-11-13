@@ -87,7 +87,7 @@ class _MasonryFilesState extends State<MasonryFiles> {
           itemCount: widget.files.length,
           itemBuilder: itemBuilder,
         ),
-        .list => listFilesSliver(widget.files.length, itemBuilder), // Fork
+        .list => listFilesSliver(widget, itemBuilder), // Fork
       },
     );
   }

@@ -2,8 +2,11 @@ import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoIcons;
 import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/home/delete_folder_button.dart';
 import 'package:saber/components/home/grid_folders.dart';
+import 'package:saber/components/home/list_files.dart';
 import 'package:saber/components/home/new_folder_dialog.dart';
+import 'package:saber/components/home/preview_card.dart';
 import 'package:saber/components/home/rename_folder_button.dart';
+import 'package:saber/components/home/sort_button.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -19,13 +22,31 @@ extension GridFoldersListLayout on GridFolders {
 ///
 /// Takes its folders and callbacks from [grid], so the "go up" and
 /// new folder rows and the rename, move and delete actions work the same.
+/// The folders are sorted by name, in the direction of the table's Name
+/// column when that is the active one, otherwise A to Z.
 class ListFolders extends StatelessWidget {
   const new({super.key, required this.grid});
 
   final GridFolders grid;
 
+  /// [folders] in the order shown for [sort].
+  static List<String> sorted(List<String> folders, SortMetric sort) {
+    final descending = sort == .nameZToA;
+    return [...folders]..sort((a, b) {
+      final result = compareNatural(a, b);
+      return descending ? -result : result;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: stows.browseSortMetric,
+      builder: (context, _) => _build(context),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     return SliverPadding(
       padding: const .symmetric(horizontal: 16, vertical: 4),
       sliver: SliverList.list(
@@ -51,7 +72,10 @@ class ListFolders extends StatelessWidget {
               ),
             ),
           ),
-          for (final folder in grid.folders)
+          for (final folder in sorted(
+            grid.folders,
+            stows.browseSortMetric.value,
+          ))
             _ListFolderRow(
               key: ValueKey('ListFolderRow$folder'),
               icon: Icons.folder,
@@ -105,10 +129,16 @@ class _ListFolderRowState extends State<_ListFolderRow> {
         visualDensity: VisualDensity.compact,
         shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
         selected: expanded,
-        leading: AdaptiveIcon(
-          icon: widget.icon,
-          cupertinoIcon: widget.cupertinoIcon,
-          size: 28,
+        // Line the names up with the Name column of the notes.
+        contentPadding: .symmetric(horizontal: ListColumns.padding.left),
+        horizontalTitleGap: ListColumns.gap,
+        leading: SizedBox(
+          width: ListColumns.thumbnailWidth,
+          child: AdaptiveIcon(
+            icon: widget.icon,
+            cupertinoIcon: widget.cupertinoIcon,
+            size: 28,
+          ),
         ),
         title: Text(widget.title, maxLines: 1, overflow: .ellipsis),
         onTap: expanded ? toggle : widget.onTap,

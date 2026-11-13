@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/home/home_layout_button.dart';
+import 'package:saber/components/home/list_files.dart'; // Fork
 import 'package:saber/components/home/sort_button.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/data/codecs/base64_codec.dart';
@@ -427,6 +428,15 @@ class Stows {
     'browseSortMetric',
     SortMetric.nameAToZ,
     codec: SortMetric.codec,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Fork: the sort of the List home layout in Recent, Search and Latest.
+  /// Browse's folder view uses [browseSortMetric].
+  final listSortMetric = PlainStow(
+    'listSortMetric',
+    ListSort.modifiedDesc,
+    codec: ListSort.codec,
     volatile: !_isOnMainIsolate,
   );
   final recentFiles = PlainStow(
