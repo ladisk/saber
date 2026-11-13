@@ -18,6 +18,7 @@ class NotePin {
     required this.x,
     required this.y,
     required this.width,
+    this.collapsed = false,
   });
 
   /// The key in the note file. It is absent when a note has no pins,
@@ -36,6 +37,10 @@ class NotePin {
   /// The window's width, as a fraction of the editor's width.
   /// Its height follows from the aspect ratio of [rect].
   double width;
+
+  /// Whether the window is shrunk to a small tab. It expands back
+  /// to [width] at the tab's position.
+  bool collapsed;
 
   /// The margin around the selected items, in page units.
   static const padding = 16.0;
@@ -73,6 +78,8 @@ class NotePin {
     'x': x,
     'y': y,
     'w': width,
+    // omitted when expanded, so older notes and readers are unaffected
+    if (collapsed) 'c': true,
   };
 
   /// Reads a pin, or returns null if [json] is malformed
@@ -103,6 +110,7 @@ class NotePin {
       x: x,
       y: y,
       width: width,
+      collapsed: json['c'] == true,
     );
   }
 

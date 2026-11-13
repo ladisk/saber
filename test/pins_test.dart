@@ -89,6 +89,27 @@ void main() {
       expect((pin.x, pin.y, pin.width), (0.6, 0.1, 0.3));
     });
 
+    test('the collapsed state is saved only when set', () async {
+      final coreInfo = note(1);
+      final pin = pinOn(coreInfo.pages.first);
+      coreInfo.ladiskPins.add(pin);
+      expect(pin.toJson(0).containsKey('c'), isFalse);
+
+      pin.collapsed = true;
+      final loaded = await reload(coreInfo);
+      expect(loaded.ladiskPins.single.collapsed, isTrue);
+
+      // a pin saved before collapsing existed loads expanded
+      final old = NotePin.fromJson({
+        'page': 0,
+        'rect': [0, 0, 10, 10],
+        'x': 0,
+        'y': 0,
+        'w': 0.3,
+      }, coreInfo.pages);
+      expect(old!.collapsed, isFalse);
+    });
+
     test('an old note loads without pins', () async {
       final coreInfo = note(1);
       final loaded = await reload(coreInfo);
@@ -289,6 +310,60 @@ void main() {
     expect(pin.y, greaterThan(yBefore));
     expect(page.strokes, hasLength(strokesBefore));
     expect(savingState(), SavingState.waitingToSave);
+
+    // dragging from the middle moves it too
+    final xMid = pin.x;
+    final yMid = pin.y;
+    await tester.dragFrom(
+      tester.getCenter(find.byType(PinWindow)),
+      const Offset(20, -10),
+    );
+    await tester.pump();
+    expect(pin.x, greaterThan(xMid));
+    expect(pin.y, lessThan(yMid));
+    expect(page.strokes, hasLength(strokesBefore));
+
+    // the corner handle resizes instead of moving
+    final widthBefore = pin.width;
+    final xCorner = pin.x;
+    final yCorner = pin.y;
+    final corner =
+        tester.getBottomRight(find.byType(PinWindow)) - const Offset(14, 14);
+    final gesture = await tester.startGesture(corner);
+    await gesture.moveBy(const Offset(-30, -30));
+    await gesture.moveBy(const Offset(-20, -20));
+    await gesture.up();
+    await tester.pump();
+    expect(pin.width, lessThan(widthBefore));
+    expect((pin.x, pin.y), (xCorner, yCorner));
+
+    // collapsing leaves a small tab at the same place; a tap expands it
+    final frameBefore = tester.getRect(find.byType(PinWindow));
+    state.cancelAutosaveAndMarkSaved();
+    await tester.tap(find.byTooltip('Collapse pin'));
+    await tester.pump();
+    expect(pin.collapsed, isTrue);
+    expect(find.byType(PinView), findsNothing);
+    expect(tester.getRect(find.byType(PinWindow)).topLeft, frameBefore.topLeft);
+    expect(tester.getSize(find.byType(PinWindow)), const Size(40, 40));
+    expect(savingState(), SavingState.waitingToSave);
+
+    // the tab can be dragged
+    final xTab = pin.x;
+    await tester.drag(find.byType(PinWindow), const Offset(-30, 0));
+    await tester.pump();
+    expect(pin.x, lessThan(xTab));
+    expect(pin.collapsed, isTrue);
+    final tabTopLeft = tester.getRect(find.byType(PinWindow)).topLeft;
+
+    await tester.tap(find.byType(PinWindow));
+    await tester.pump();
+    expect(pin.collapsed, isFalse);
+    expect(find.byType(PinView), findsOneWidget);
+    final expanded = tester.getRect(find.byType(PinWindow));
+    expect(expanded.topLeft, tabTopLeft);
+    expect(expanded.width, closeTo(frameBefore.width, 1e-6));
+    expect(expanded.height, closeTo(frameBefore.height, 1e-6));
 
     // writing on the window doesn't write on the page beneath
     // (the view itself ignores touches, the window takes them)

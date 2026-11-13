@@ -8,15 +8,16 @@ import 'package:saber/data/editor/pin.dart';
 /// The pins of a note (LADISK fork), each in a window fixed over the
 /// editor while the pages scroll and zoom underneath.
 ///
-/// Drag a window by its top strip and resize it by its bottom right corner;
-/// the cross closes it. Touches on a window never reach the page.
+/// Drag a window anywhere to move it and resize it by its bottom right
+/// corner; the cross closes it and the arrow collapses it to a small tab,
+/// which a tap expands again. Touches on a window never reach the page.
 /// Place it in a [Stack] over the canvas, filling it.
 class PinLayer extends StatefulWidget {
   const new({super.key, required this.coreInfo, required this.onChanged});
 
   final EditorCoreInfo coreInfo;
 
-  /// Called after a pin was moved, resized or closed, to save the note.
+  /// Called after a pin was moved, resized, collapsed or closed, to save the note.
   final VoidCallback onChanged;
 
   @override
@@ -79,8 +80,22 @@ class PinWindow extends StatefulWidget {
   /// The narrowest a window gets, unless the editor is narrower.
   static const minWidth = 96.0;
 
+  /// The size of the tab a collapsed window shrinks to.
+  static const tabSize = 40.0;
+
   /// The window's rectangle in the editor, kept on screen.
   static Rect frameOf(NotePin pin, Size area) {
+    if (pin.collapsed) {
+      final side = min(tabSize, min(area.width, area.height));
+      return Rect.fromLTWH(
+        (pin.x * area.width).clamp(0.0, max(0.0, area.width - side)).toDouble(),
+        (pin.y * area.height)
+            .clamp(0.0, max(0.0, area.height - side))
+            .toDouble(),
+        side,
+        side,
+      );
+    }
     final aspect = pin.rect.height / pin.rect.width;
     final maxWidth = max(
       0.0,
@@ -120,6 +135,21 @@ class _PinWindowState extends State<PinWindow> {
     });
   }
 
+  void _setCollapsed(bool collapsed) {
+    setState(() {
+      // keep the position it is shown at
+      final frame = PinWindow.frameOf(pin, area);
+      pin.x = frame.left / area.width;
+      pin.y = frame.top / area.height;
+      pin.collapsed = collapsed;
+      // and the expanded window on screen
+      final shown = PinWindow.frameOf(pin, area);
+      pin.x = shown.left / area.width;
+      pin.y = shown.top / area.height;
+    });
+    widget.onChanged();
+  }
+
   void _resize(DragUpdateDetails details) {
     final frame = PinWindow.frameOf(pin, area);
     final aspect = pin.rect.height / pin.rect.width;
@@ -140,26 +170,60 @@ class _PinWindowState extends State<PinWindow> {
     final colorScheme = ColorScheme.of(context);
     final frame = PinWindow.frameOf(pin, area);
 
+    if (pin.collapsed) {
+      return Positioned.fromRect(
+        rect: frame,
+        child: Listener(
+          behavior: .opaque,
+          child: GestureDetector(
+            behavior: .opaque,
+            onTap: () => _setCollapsed(false),
+            onPanUpdate: _move,
+            onPanEnd: (_) => widget.onChanged(),
+            child: Tooltip(
+              // English only: this fork doesn't regenerate translations.
+              message: 'Expand pin',
+              child: Material(
+                elevation: 3,
+                color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+                shape: RoundedRectangleBorder(
+                  borderRadius: .circular(12),
+                  side: BorderSide(color: colorScheme.outlineVariant),
+                ),
+                child: Icon(
+                  Icons.push_pin,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Positioned.fromRect(
       rect: frame,
       // don't let touches fall through to the page
       child: Listener(
         behavior: .opaque,
-        child: Material(
-          elevation: 3,
-          color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: .circular(12),
-            side: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          clipBehavior: .antiAlias,
-          child: Column(
-            children: [
-              GestureDetector(
-                behavior: .opaque,
-                onPanUpdate: _move,
-                onPanEnd: (_) => widget.onChanged(),
-                child: SizedBox(
+        // a drag anywhere moves the window; the resize corner and the
+        // buttons are deeper and take their own touches first
+        child: GestureDetector(
+          behavior: .opaque,
+          onPanUpdate: _move,
+          onPanEnd: (_) => widget.onChanged(),
+          child: Material(
+            elevation: 3,
+            color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+            shape: RoundedRectangleBorder(
+              borderRadius: .circular(12),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            clipBehavior: .antiAlias,
+            child: Column(
+              children: [
+                SizedBox(
                   height: PinWindow.stripHeight,
                   child: Row(
                     children: [
@@ -170,6 +234,18 @@ class _PinWindowState extends State<PinWindow> {
                         color: colorScheme.onSurfaceVariant,
                       ),
                       const Spacer(),
+                      IconButton(
+                        onPressed: () => _setCollapsed(true),
+                        // English only: this fork doesn't regenerate translations.
+                        tooltip: 'Collapse pin',
+                        icon: const Icon(Icons.expand_less, size: 18),
+                        visualDensity: .compact,
+                        padding: .zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
                       IconButton(
                         onPressed: widget.onClose,
                         // English only: this fork doesn't regenerate translations.
@@ -185,54 +261,56 @@ class _PinWindowState extends State<PinWindow> {
                     ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: Stack(
-                  fit: .expand,
-                  children: [
-                    IgnorePointer(
-                      child: PinView(
-                        coreInfo: widget.coreInfo,
-                        pin: pin,
-                        scale: frame.width / pin.rect.width,
+                Expanded(
+                  child: Stack(
+                    fit: .expand,
+                    children: [
+                      IgnorePointer(
+                        child: PinView(
+                          coreInfo: widget.coreInfo,
+                          pin: pin,
+                          scale: frame.width / pin.rect.width,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      width: PinWindow.handleSize,
-                      height: PinWindow.handleSize,
-                      child: GestureDetector(
-                        behavior: .opaque,
-                        onPanUpdate: _resize,
-                        onPanEnd: (_) => widget.onChanged(),
-                        child: Tooltip(
-                          // English only: this fork doesn't regenerate translations.
-                          message: 'Resize',
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainer.withValues(
-                                alpha: 0.8,
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        width: PinWindow.handleSize,
+                        height: PinWindow.handleSize,
+                        child: GestureDetector(
+                          behavior: .opaque,
+                          onPanUpdate: _resize,
+                          onPanEnd: (_) => widget.onChanged(),
+                          child: Tooltip(
+                            // English only: this fork doesn't regenerate translations.
+                            message: 'Resize',
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainer.withValues(
+                                  alpha: 0.8,
+                                ),
+                                borderRadius: const .only(
+                                  topLeft: .circular(8),
+                                ),
                               ),
-                              borderRadius: const .only(topLeft: .circular(8)),
-                            ),
-                            // arrows from top left to bottom right
-                            child: RotatedBox(
-                              quarterTurns: 1,
-                              child: Icon(
-                                Icons.open_in_full,
-                                size: 14,
-                                color: colorScheme.onSurfaceVariant,
+                              // arrows from top left to bottom right
+                              child: RotatedBox(
+                                quarterTurns: 1,
+                                child: Icon(
+                                  Icons.open_in_full,
+                                  size: 14,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
