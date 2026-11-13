@@ -190,15 +190,23 @@ void _insert(String languageCode, List<Object> pathOfKeys, String translated) {
     }
   }
 
+  // The flags needed vary based on your system
   _run('yq', [
-    '-i',
+    '-i', // edit in place
+    // '--yaml-roundtrip', // preserve formatting
+    // '--width=0', // disable line wrapping
     '$query = ${jsonEncode(translated)}',
     'lib/i18n/$languageCode.i18n.yaml',
   ]);
 }
 
 /// Runs a command silently and returns its output as a string.
-String _run(String exe, List<String> args) => Process.runSync(exe, args).stdout;
+String _run(String exe, List<String> args) {
+  final result = Process.runSync(exe, args);
+  if (result.exitCode != 0)
+    throw ProcessException(exe, args, result.stderr, exitCode);
+  return result.stdout;
+}
 
 /// Runs a command interactively, but cannot return its output.
 Future<void> _runLive(String exe, List<String> args) async {

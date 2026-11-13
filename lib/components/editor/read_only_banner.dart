@@ -1,5 +1,5 @@
 import 'package:collapsible/collapsible.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:sbn/read_only_reason.dart';
 
@@ -40,7 +40,7 @@ class _ReadOnlyBannerState extends State<ReadOnlyBanner> {
 
     return Collapsible(
       collapsed: !needsBanner,
-      axis: CollapsibleAxis.vertical,
+      axis: .vertical,
       child: SafeArea(
         child: ListTile(
           onTap: widget.action,

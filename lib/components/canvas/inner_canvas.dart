@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:saber/components/canvas/_canvas_background_painter.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
@@ -13,6 +13,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/quill_click_to_type.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -75,8 +76,16 @@ class _InnerCanvasState extends State<InnerCanvas> {
     final colorScheme = theme.colorScheme;
     final brightness = theme.brightness;
     final invert = stows.editorAutoInvert.value && brightness == .dark;
+    final invertColorScheme =
+        !stows.editorAutoInvert.value && brightness == .dark;
+
     final Color backgroundColor =
         widget.coreInfo.backgroundColor ?? InnerCanvas.defaultBackgroundColor;
+
+    final primaryColor = colorScheme.primary.withInversion(invertColorScheme);
+    final secondaryColor = colorScheme.secondary.withInversion(
+      invertColorScheme,
+    );
 
     if (widget.coreInfo.pages.isEmpty) {
       return SizedBox(width: widget.width, height: widget.height);
@@ -138,8 +147,8 @@ class _InnerCanvasState extends State<InnerCanvas> {
           }(),
           lineHeight: widget.coreInfo.lineHeight,
           lineThickness: widget.coreInfo.lineThickness,
-          primaryColor: colorScheme.primary,
-          secondaryColor: colorScheme.secondary,
+          primaryColor: primaryColor,
+          secondaryColor: secondaryColor,
         ),
         foregroundPainter: CanvasPainter(
           repaint: widget.redrawPageListenable,
@@ -148,7 +157,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
           laserStrokes: page.laserStrokes,
           currentStroke: widget.currentStroke,
           currentSelection: widget.currentSelection,
-          primaryColor: colorScheme.primary,
+          primaryColor: primaryColor,
           page: page,
           showPageIndicator: widget.showPageIndicator,
           pageIndex: widget.pageIndex,

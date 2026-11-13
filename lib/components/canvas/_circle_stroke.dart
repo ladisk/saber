@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -76,7 +76,7 @@ class CircleStroke extends Stroke {
   @override
   bool get isEmpty => radius <= 0;
   @override
-  int get length => 25;
+  int get length => 24;
 
   /// A list of 24/N points that form a circle
   /// with [center] and [radius].

@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/canvas_background_preview.dart';
 import 'package:saber/components/canvas/canvas_image_dialog.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
@@ -130,7 +130,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
               SizedBox(
                 height: previewSize.height,
                 child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
+                  scrollDirection: .horizontal,
                   itemCount: imageBoxFits.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
@@ -193,7 +193,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             SizedBox(
               height: previewSize.height,
               child: ListView.separated(
-                scrollDirection: Axis.horizontal,
+                scrollDirection: .horizontal,
                 itemCount: CanvasBackgroundPattern.values.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {

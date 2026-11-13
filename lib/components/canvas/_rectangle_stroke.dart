@@ -1,5 +1,5 @@
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -77,25 +77,28 @@ class RectangleStroke extends Stroke {
   @override
   bool get isEmpty => rect.isEmpty;
   @override
-  int get length => 100;
+  int get length => 64;
 
   /// A list of points that form the rectangle's perimeter.
-  /// Each side has 24/N points.
+  /// Each side has 16/N points.
   @override
-  List<Offset> getPolygon({required StrokeQuality quality}) => [
-    // left side
-    for (int i = 0; i < 24 / quality.N; ++i)
-      Offset(rect.left, rect.top + rect.height * i / 24),
-    // bottom side
-    for (int i = 0; i < 24 / quality.N; ++i)
-      Offset(rect.left + rect.width * i / 24, rect.bottom),
-    // right side
-    for (int i = 0; i < 24 / quality.N; ++i)
-      Offset(rect.right, rect.bottom - rect.height * i / 24),
-    // top side
-    for (int i = 0; i < 24 / quality.N; ++i)
-      Offset(rect.right - rect.width * i / 24, rect.top),
-  ];
+  List<Offset> getPolygon({required StrokeQuality quality}) {
+    final numPoints = length / 4 ~/ quality.N;
+    return [
+      // left side
+      for (int i = 0; i < numPoints; ++i)
+        Offset(rect.left, rect.top + rect.height * i / numPoints),
+      // bottom side
+      for (int i = 0; i < numPoints; ++i)
+        Offset(rect.left + rect.width * i / numPoints, rect.bottom),
+      // right side
+      for (int i = 0; i < numPoints; ++i)
+        Offset(rect.right, rect.bottom - rect.height * i / numPoints),
+      // top side
+      for (int i = 0; i < numPoints; ++i)
+        Offset(rect.right - rect.width * i / numPoints, rect.top),
+    ];
+  }
 
   /// Returns a [Path] with four lines for each side of the rectangle.
   @override

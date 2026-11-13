@@ -355,6 +355,9 @@ editor:
       staffs: Notová osnova
       tablature: Tabulatura
       cornell: Cornellova metoda
+  photoPdfError:
+    title: Chyba
+    message: "Soubory ve formátu PDF nelze vložit jako obrázek. Případně použijte „@:editor.menu.import > PDF“."
   readOnlyBanner:
     title: Otevřít v režimu pouze pro čtení
     watchingServer: Aktuálně máte zapnuté sledování změn ze serveru. V tomto módu jsou vypnuté úpravy.

@@ -5,17 +5,17 @@ import 'dart:math' show max, min;
 
 import 'package:collapsible/collapsible.dart';
 import 'package:collection/collection.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, listEquals;
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart' as flutter_quill;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -73,7 +73,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 part 'editor_clipboard.dart';
 part 'editor_image_drop.dart';
 
-typedef _PhotoInfo = ({Uint8List bytes, String extension});
+class const _PhotoInfo(final Uint8List bytes, final String extension);
 
 class Editor extends StatefulWidget {
   new({super.key, String? path, this.customTitle, this.pdfPath})
@@ -1746,12 +1746,17 @@ class EditorState extends State<Editor> {
     photoInfos ??= await _pickPhotosWithFilePicker();
     if (photoInfos.isEmpty) return 0;
 
-    // use the Select tool so that the user can move the new image
-    currentTool = Select.currentSelect;
+    /// Some Android platforms allow selecting a pdf here.
+    /// Tell user to use the Import PDF function instead.
+    var triedToPickPdf = false;
 
-    final images = [
-      for (final _PhotoInfo photoInfo in photoInfos)
-        if (photoInfo.extension == '.svg')
+    final images = <EditorImage>[];
+    for (final _PhotoInfo photoInfo in photoInfos) {
+      if (photoInfo.extension.toLowerCase() == '.pdf') {
+        triedToPickPdf = true;
+        continue;
+      } else if (photoInfo.extension.toLowerCase() == '.svg') {
+        images.add(
           SvgEditorImage(
             id: coreInfo.nextImageId++,
             svgString: utf8.decode(photoInfo.bytes),
@@ -1763,8 +1768,10 @@ class EditorState extends State<Editor> {
             onMiscChange: autosaveAfterDelay,
             onLoad: () => setState(() {}),
             assetCache: coreInfo.assetCache,
-          )
-        else
+          ),
+        );
+      } else {
+        images.add(
           PngEditorImage(
             id: coreInfo.nextImageId++,
             extension: photoInfo.extension,
@@ -1777,19 +1784,42 @@ class EditorState extends State<Editor> {
             onLoad: () => setState(() {}),
             assetCache: coreInfo.assetCache,
           ),
-    ];
-
-    for (var i = 0; i < images.length; ++i) {
-      _centreWhenLoaded(
-        images[i],
-        target.position + _PasteTarget.step * i.toDouble(),
-      );
+        );
+      }
     }
 
-    history.recordChange(HistoricAdd(strokes: const [], images: images));
-    createPage(currentPageIndex);
-    coreInfo.pages[currentPageIndex].images.addAll(images);
-    autosaveAfterDelay();
+    if (images.isNotEmpty) {
+      // use the Select tool so that the user can move the new image
+      currentTool = Select.currentSelect;
+
+      for (var i = 0; i < images.length; ++i) {
+        _centreWhenLoaded(
+          images[i],
+          target.position + _PasteTarget.step * i.toDouble(),
+        );
+      }
+
+      history.recordChange(HistoricAdd(strokes: const [], images: images));
+      createPage(currentPageIndex);
+      coreInfo.pages[currentPageIndex].images.addAll(images);
+      autosaveAfterDelay();
+    }
+
+    if (triedToPickPdf && mounted) {
+      await showDialog(
+        context: context,
+        builder: (context) => AdaptiveAlertDialog(
+          title: Text(t.editor.photoPdfError.title),
+          content: Text(t.editor.photoPdfError.message),
+          actions: [
+            CupertinoDialogAction(
+              child: Text(t.common.done),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
 
     return images.length;
   }
@@ -1824,7 +1854,7 @@ class EditorState extends State<Editor> {
           final extension = p.extension(file.path ?? file.name);
           if (extension.isEmpty) return null;
           final bytes = await file.readAsBytes();
-          return (bytes: bytes, extension: extension);
+          return _PhotoInfo(bytes, extension);
         }(),
     ]).then((list) => list.nonNulls.toList());
   }
@@ -2047,8 +2077,8 @@ class EditorState extends State<Editor> {
     final colorScheme = ColorScheme.of(context);
     final platform = Theme.of(context).platform;
     final isToolbarVertical =
-        stows.editorToolbarAlignment.value == AxisDirection.left ||
-        stows.editorToolbarAlignment.value == AxisDirection.right;
+        stows.editorToolbarAlignment.value == .left ||
+        stows.editorToolbarAlignment.value == .right;
 
     final Widget canvasGestureDetector = _trackMouse(
       CanvasGestureDetector(
@@ -2123,15 +2153,13 @@ class EditorState extends State<Editor> {
     );
 
     final Widget toolbar = Collapsible(
-      axis: isToolbarVertical
-          ? CollapsibleAxis.horizontal
-          : CollapsibleAxis.vertical,
+      axis: isToolbarVertical ? .horizontal : .vertical,
       collapsed:
           DynamicMaterialApp.isFullscreen &&
           !stows.editorToolbarShowInFullscreen.value,
       maintainState: true,
       child: SafeArea(
-        bottom: stows.editorToolbarAlignment.value != AxisDirection.up,
+        bottom: stows.editorToolbarAlignment.value != .up,
         child: Toolbar(
           readOnly: coreInfo.readOnly,
           setTool: setTool,
@@ -2237,16 +2265,21 @@ class EditorState extends State<Editor> {
 
     final Widget body;
     if (isToolbarVertical) {
+      final editorToolbarAlignment = stows.editorToolbarAlignment.value;
       body = Row(
-        textDirection: stows.editorToolbarAlignment.value == AxisDirection.left
-            ? .ltr
-            : .rtl,
+        textDirection: editorToolbarAlignment == .left ? .ltr : .rtl,
         children: [
           toolbar,
           Expanded(
             child: Column(
               children: [
-                Expanded(child: canvas),
+                Expanded(
+                  child: SafeArea(
+                    left: editorToolbarAlignment != .left,
+                    right: editorToolbarAlignment != .right,
+                    child: canvas,
+                  ),
+                ),
                 readonlyBanner,
               ],
             ),
@@ -2254,13 +2287,17 @@ class EditorState extends State<Editor> {
         ],
       );
     } else {
+      final editorToolbarAlignment = stows.editorToolbarAlignment.value;
       body = Column(
-        verticalDirection:
-            stows.editorToolbarAlignment.value == AxisDirection.up
-            ? VerticalDirection.up
-            : VerticalDirection.down,
+        verticalDirection: editorToolbarAlignment == .up ? .up : .down,
         children: [
-          Expanded(child: canvas),
+          Expanded(
+            child: SafeArea(
+              top: editorToolbarAlignment != .up,
+              bottom: editorToolbarAlignment != .down,
+              child: canvas,
+            ),
+          ),
           toolbar,
           readonlyBanner,
         ],

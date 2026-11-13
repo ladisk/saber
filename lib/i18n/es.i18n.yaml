@@ -52,10 +52,11 @@ home:
   deleteNote: Eliminar nota
   deleteNoteDialog:
     deleteNotes: Eliminar $n notas
+    deleteName: Eliminar $f
     confirmDelete:
+      one: Eliminar permanentemente la nota seleccionada?
       other: ¿Desea eliminar la nota seleccionada de forma permanente?
     delete: Eliminar
-    deleteName(OUTDATED): Borrar $f
   renameFolder:
     renameFolder: Renombrar carpeta
     folderName: Nombre de la carpeta
@@ -69,15 +70,15 @@ home:
     delete: Eliminar
     alsoDeleteContents: Eliminar también las notas guardadas dentro de la carpeta
   sort:
-    sortBy(OUTDATED): Ordenar por
-    nameAToZ(OUTDATED): Nombre (de la A a la Z)
-    nameZToA(OUTDATED): Nombre (de la A a la Z)
-    lastModifiedNewToOld(OUTDATED): Editado (Más reciente primero)
-    lastModifiedOldToNew(OUTDATED): Editado (Más antiguo primero)
+    sortBy: Ordenar por
+    nameAToZ: Nombre (A-Z)
+    nameZToA: Nombre (Z-A)
+    lastModifiedNewToOld: Editado (Nuevos primero)
+    lastModifiedOldToNew: Editado (Antiguos primero)
   layout:
+    simpleGrid: Cuadricula simple
     layout(OUTDATED): Diseño de página
     masonryGrid(OUTDATED): Cuadrícula de mampostería
-    simpleGrid(OUTDATED): Cuadrícula simple
 sentry:
   consent:
     title: ¿Quieres mejorar Saber?
@@ -86,7 +87,7 @@ sentry:
       scope: Los reportes pueden contener información acerca del error y su dispositivo. Me he esforzado por filtrar la información personal, pero es posible que queden restos.
       currentlyOff: Si aceptas, los informes de error se activarán al reiniciar la app.
       currentlyOn: En caso de retirar su consentimiento, reinicie la aplicación para desactivar el reporte de errores.
-      learnMoreInPrivacyPolicy(rich): Aprenda más en ${link(privacy policy)}.
+      learnMoreInPrivacyPolicy(rich): Aprende más en ${link(privacy policy)}.
     answers:
       yes: Si
       no: No
@@ -140,15 +141,15 @@ settings:
     autoDisableFingerDrawingWhenStylusDetected: Desactivar dibujar con el dedo cuando hay un bolígrafo detectado
     editorPromptRename: Siempre puedes cambiar el nombre de las notas más tarde
     printPageIndicators: Mostrar indicadores de página en las exportaciones
+    autosave: Guardado automático con una pequeña demora, o nunca
     shapeRecognitionDelay: Cuán a menudo se actualiza la previsualización de forma
     autoStraightenLines: Enderezar líneas largas sin utilizar el bolígrafo de formas
     shouldAlwaysAlertForUpdates: Avísame sobre actualizaciones tan pronto como estén disponibles
     sentry:
-      active(OUTDATED): Activo
-      inactive(OUTDATED): Inactivo
-      activeUntilRestart(OUTDATED): Activo hasta que reinicie la aplicación
+      active: Activo
+      inactive: Inactivo
+      activeUntilRestart: Activo hasta el reinicio de la aplicación
       inactiveUntilRestart(OUTDATED): Inactivo hasta que reinicie la aplicación
-    autosave(OUTDATED): Auto-Save después de un breve retraso, o nunca
   themeModes:
     system: Sistema
     light: Claro
@@ -352,6 +353,9 @@ editor:
     watchServer(OUTDATED): Esté atento a las actualizaciones en el servidor.
     watchServerReadOnly(OUTDATED): La edición está deshabilitada mientras se mira el servidor.
     lineHeightDescription(OUTDATED): También controla el tamaño del texto de las notas escritas.
+  photoPdfError:
+    title(OUTDATED): Error
+    message(OUTDATED): "No se pueden añadir archivos PDF como imagen. Usa \"@:editor.menu.import > PDF\" para eso."
   readOnlyBanner:
     title: Modo de solo lectura
     watchingServer(OUTDATED): Actualmente estás buscando actualizaciones en el servidor. La edición está deshabilitada en este modo.

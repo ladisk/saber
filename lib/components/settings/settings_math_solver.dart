@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/settings/settings_button.dart';
 import 'package:saber/components/theming/adaptive_switch_list_tile.dart';
 import 'package:saber/data/math_solver/math_solver_settings.dart';

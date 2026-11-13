@@ -263,12 +263,14 @@ extension _EditorClipboard on EditorState {
       if (bytes == null || bytes.isEmpty) continue;
 
       final dot = fileName?.lastIndexOf('.') ?? -1;
-      photos.add((
-        bytes: bytes,
-        extension: dot >= 0
-            ? fileName!.substring(dot).toLowerCase()
-            : _pastableImages[format]!,
-      ));
+      photos.add(
+        _PhotoInfo(
+          bytes,
+          dot >= 0
+              ? fileName!.substring(dot).toLowerCase()
+              : _pastableImages[format]!,
+        ),
+      );
     }
     return photos;
   }

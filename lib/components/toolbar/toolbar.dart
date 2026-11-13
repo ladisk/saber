@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:collapsible/collapsible.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
@@ -231,8 +231,8 @@ class _ToolbarState extends State<Toolbar> {
     final invert = stows.editorAutoInvert.value && brightness == .dark;
 
     final isToolbarVertical =
-        stows.editorToolbarAlignment.value == AxisDirection.left ||
-        stows.editorToolbarAlignment.value == AxisDirection.right;
+        stows.editorToolbarAlignment.value == .left ||
+        stows.editorToolbarAlignment.value == .right;
 
     final buttonPadding = isToolbarVertical
         ? Toolbar._buttonPaddingVertical
@@ -256,16 +256,14 @@ class _ToolbarState extends State<Toolbar> {
         valueListenable: showExportOptions,
         builder: (context, showExportOptions, child) {
           return Collapsible(
-            axis: isToolbarVertical
-                ? CollapsibleAxis.horizontal
-                : CollapsibleAxis.vertical,
+            axis: isToolbarVertical ? .horizontal : .vertical,
             maintainState: true,
             collapsed: !showExportOptions,
             child: child!,
           );
         },
         child: ExportBar(
-          axis: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+          axis: isToolbarVertical ? .vertical : .horizontal,
           toggleExportBar: toggleExportBar,
           exportAsSba: widget.exportAsSba,
           exportAsPdf: widget.exportAsPdf,
@@ -276,9 +274,7 @@ class _ToolbarState extends State<Toolbar> {
         valueListenable: toolOptionsType,
         builder: (context, toolOptionsType, _) {
           return Collapsible(
-            axis: isToolbarVertical
-                ? CollapsibleAxis.horizontal
-                : CollapsibleAxis.vertical,
+            axis: isToolbarVertical ? .horizontal : .vertical,
             maintainState: true,
             collapsed: toolOptionsType == .hide,
             child: switch (toolOptionsType) {
@@ -313,16 +309,14 @@ class _ToolbarState extends State<Toolbar> {
         valueListenable: showColorOptions,
         builder: (context, showColorOptions, child) {
           return Collapsible(
-            axis: isToolbarVertical
-                ? CollapsibleAxis.horizontal
-                : CollapsibleAxis.vertical,
+            axis: isToolbarVertical ? .horizontal : .vertical,
             maintainState: true,
             collapsed: !showColorOptions,
             child: child!,
           );
         },
         child: ColorBar(
-          axis: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+          axis: isToolbarVertical ? .vertical : .horizontal,
           setColor: widget.setColor,
           currentColor: currentColor,
           invert: invert,
@@ -349,16 +343,14 @@ class _ToolbarState extends State<Toolbar> {
             ),
           );
           return Collapsible(
-            axis: isToolbarVertical
-                ? CollapsibleAxis.horizontal
-                : CollapsibleAxis.vertical,
+            axis: isToolbarVertical ? .horizontal : .vertical,
             maintainState: false,
             collapsed: !widget.textEditing || quill == null,
             child: quill != null
                 ? QuillSimpleToolbar(
                     controller: quill.controller,
                     config: QuillSimpleToolbarConfig(
-                      axis: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+                      axis: isToolbarVertical ? .vertical : .horizontal,
                       buttonOptions: QuillSimpleToolbarButtonOptions(
                         base: QuillToolbarBaseButtonOptions(
                           iconTheme: iconTheme,
@@ -381,7 +373,7 @@ class _ToolbarState extends State<Toolbar> {
         child: Padding(
           padding: const .all(8),
           child: Wrap(
-            direction: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+            direction: isToolbarVertical ? .vertical : .horizontal,
             alignment: WrapAlignment.center,
             runSpacing: 8,
             children: [
@@ -601,7 +593,7 @@ class _ToolbarState extends State<Toolbar> {
                 ),
               ),
               Wrap(
-                direction: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+                direction: isToolbarVertical ? .vertical : .horizontal,
                 children: [
                   ToolbarIconButton(
                     tooltip: t.editor.toolbar.undo,
@@ -649,16 +641,16 @@ class _ToolbarState extends State<Toolbar> {
     ];
 
     return Flex(
-      direction: isToolbarVertical ? Axis.horizontal : Axis.vertical,
+      direction: isToolbarVertical ? .horizontal : .vertical,
       textDirection: switch (stows.editorToolbarAlignment.value) {
-        AxisDirection.left => .rtl,
-        AxisDirection.right => .ltr,
+        .left => .rtl,
+        .right => .ltr,
         _ => null,
       },
       verticalDirection: switch (stows.editorToolbarAlignment.value) {
-        AxisDirection.down => VerticalDirection.down,
-        AxisDirection.up => VerticalDirection.up,
-        _ => VerticalDirection.down,
+        .down => .down,
+        .up => .up,
+        _ => .down,
       },
       children: bars,
     );

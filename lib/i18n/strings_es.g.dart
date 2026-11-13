@@ -223,6 +223,7 @@ class _Translations$editor$es extends Translations$editor$en {
 	@override late final _Translations$editor$imageOptions$es imageOptions = _Translations$editor$imageOptions$es._(_root);
 	@override late final _Translations$editor$selectionBar$es selectionBar = _Translations$editor$selectionBar$es._(_root);
 	@override late final _Translations$editor$menu$es menu = _Translations$editor$menu$es._(_root);
+	@override late final _Translations$editor$photoPdfError$es photoPdfError = _Translations$editor$photoPdfError$es._(_root);
 	@override late final _Translations$editor$readOnlyBanner$es readOnlyBanner = _Translations$editor$readOnlyBanner$es._(_root);
 	@override late final _Translations$editor$versionTooNew$es versionTooNew = _Translations$editor$versionTooNew$es._(_root);
 	@override late final _Translations$editor$quill$es quill = _Translations$editor$quill$es._(_root);
@@ -336,11 +337,12 @@ class _Translations$home$deleteNoteDialog$es extends Translations$home$deleteNot
 
 	// Translations
 	@override String deleteNotes({required Object n}) => 'Eliminar ${n} notas';
+	@override String deleteName({required Object f}) => 'Eliminar ${f}';
 	@override String confirmDelete({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('es'))(n,
+		one: 'Eliminar permanentemente la nota seleccionada?',
 		other: '¿Desea eliminar la nota seleccionada de forma permanente?',
 	);
 	@override String get delete => 'Eliminar';
-	@override String deleteName({required Object f}) => 'Borrar ${f}';
 }
 
 // Path: home.renameFolder
@@ -379,10 +381,10 @@ class _Translations$home$sort$es extends Translations$home$sort$en {
 
 	// Translations
 	@override String get sortBy => 'Ordenar por';
-	@override String get nameAToZ => 'Nombre (de la A a la Z)';
-	@override String get nameZToA => 'Nombre (de la A a la Z)';
-	@override String get lastModifiedNewToOld => 'Editado (Más reciente primero)';
-	@override String get lastModifiedOldToNew => 'Editado (Más antiguo primero)';
+	@override String get nameAToZ => 'Nombre (A-Z)';
+	@override String get nameZToA => 'Nombre (Z-A)';
+	@override String get lastModifiedNewToOld => 'Editado (Nuevos primero)';
+	@override String get lastModifiedOldToNew => 'Editado (Antiguos primero)';
 }
 
 // Path: home.layout
@@ -392,9 +394,9 @@ class _Translations$home$layout$es extends Translations$home$layout$en {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
+	@override String get simpleGrid => 'Cuadricula simple';
 	@override String get layout => 'Diseño de página';
 	@override String get masonryGrid => 'Cuadrícula de mampostería';
-	@override String get simpleGrid => 'Cuadrícula simple';
 }
 
 // Path: sentry.consent
@@ -476,11 +478,11 @@ class _Translations$settings$prefDescriptions$es extends Translations$settings$p
 	@override String get autoDisableFingerDrawingWhenStylusDetected => 'Desactivar dibujar con el dedo cuando hay un bolígrafo detectado';
 	@override String get editorPromptRename => 'Siempre puedes cambiar el nombre de las notas más tarde';
 	@override String get printPageIndicators => 'Mostrar indicadores de página en las exportaciones';
+	@override String get autosave => 'Guardado automático con una pequeña demora, o nunca';
 	@override String get shapeRecognitionDelay => 'Cuán a menudo se actualiza la previsualización de forma';
 	@override String get autoStraightenLines => 'Enderezar líneas largas sin utilizar el bolígrafo de formas';
 	@override String get shouldAlwaysAlertForUpdates => 'Avísame sobre actualizaciones tan pronto como estén disponibles';
 	@override late final _Translations$settings$prefDescriptions$sentry$es sentry = _Translations$settings$prefDescriptions$sentry$es._(_root);
-	@override String get autosave => 'Auto-Save después de un breve retraso, o nunca';
 }
 
 // Path: settings.themeModes
@@ -792,6 +794,17 @@ class _Translations$editor$menu$es extends Translations$editor$menu$en {
 	@override String get lineHeightDescription => 'También controla el tamaño del texto de las notas escritas.';
 }
 
+// Path: editor.photoPdfError
+class _Translations$editor$photoPdfError$es extends Translations$editor$photoPdfError$en {
+	_Translations$editor$photoPdfError$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Error';
+	@override String get message => 'No se pueden añadir archivos PDF como imagen. Usa "${_root.editor.menu.import} > PDF" para eso.';
+}
+
 // Path: editor.readOnlyBanner
 class _Translations$editor$readOnlyBanner$es extends Translations$editor$readOnlyBanner$en {
 	_Translations$editor$readOnlyBanner$es._(TranslationsEs root) : this._root = root, super.internal(root);
@@ -853,7 +866,7 @@ class _Translations$sentry$consent$description$es extends Translations$sentry$co
 	@override String get currentlyOff => 'Si aceptas, los informes de error se activarán al reiniciar la app.';
 	@override String get currentlyOn => 'En caso de retirar su consentimiento, reinicie la aplicación para desactivar el reporte de errores.';
 	@override TextSpan learnMoreInPrivacyPolicy({required InlineSpanBuilder link}) => TextSpan(children: [
-		const TextSpan(text: 'Aprenda más en '),
+		const TextSpan(text: 'Aprende más en '),
 		link('privacy policy'),
 		const TextSpan(text: '.'),
 	]);
@@ -892,7 +905,7 @@ class _Translations$settings$prefDescriptions$sentry$es extends Translations$set
 	// Translations
 	@override String get active => 'Activo';
 	@override String get inactive => 'Inactivo';
-	@override String get activeUntilRestart => 'Activo hasta que reinicie la aplicación';
+	@override String get activeUntilRestart => 'Activo hasta el reinicio de la aplicación';
 	@override String get inactiveUntilRestart => 'Inactivo hasta que reinicie la aplicación';
 }
 

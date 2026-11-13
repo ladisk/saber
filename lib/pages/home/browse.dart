@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:collapsible/collapsible.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:saber/components/home/delete_note_button.dart';
 import 'package:saber/components/home/export_note_button.dart';
@@ -249,7 +249,7 @@ class _BrowsePageState extends State<BrowsePage> {
           ? null
           : [
               Collapsible(
-                axis: CollapsibleAxis.vertical,
+                axis: .vertical,
                 collapsed: selectedFiles.value.length != 1,
                 child: RenameNoteButton(
                   existingPath: selectedFiles.value.isEmpty

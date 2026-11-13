@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
@@ -308,14 +308,13 @@ class Stroke {
 
     final polygon = getStroke(
       skipPoints(points, quality.N),
-      options: switch (quality) {
-        .low => options.copyWith(
-          simulatePressure: false,
-          smoothing: 0,
-          streamline: 0,
-        ),
-        .high => options,
-      },
+      options: quality.isLowQuality
+          ? options.copyWith(
+              simulatePressure: false,
+              smoothing: 0,
+              streamline: 0,
+            )
+          : options,
       rememberSimulatedPressure: rememberSimulatedPressure,
     );
 
@@ -494,10 +493,15 @@ class Stroke {
         ..points.addAll(points);
 }
 
-enum StrokeQuality(
+class StrokeQuality {
+  @visibleForTesting
+  const new(this.N);
+
   /// We use every Nth point for this quality level.
-  final int N,
-) {
-  low(4),
-  high(1),
+  final int N;
+
+  static const low = StrokeQuality(4);
+  static const high = StrokeQuality(1);
+
+  bool get isLowQuality => N > 1;
 }

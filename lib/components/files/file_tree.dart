@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/routes.dart';
 
@@ -9,7 +8,7 @@ class const FileTree({super.key}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const SingleChildScrollView(
-      scrollDirection: Axis.vertical,
+      scrollDirection: .vertical,
       child: Padding(
         padding: .directional(start: 12, top: 12, bottom: 12),
         child: _FileTreeDir(path: null),

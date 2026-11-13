@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logging/logging.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -188,7 +188,7 @@ class _LogsItem extends StatelessWidget {
           ColoredBox(
             color: const Color(0xCC000000),
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+              scrollDirection: .horizontal,
               child: Text(
                 record.stackTrace.toString(),
                 style: const TextStyle(

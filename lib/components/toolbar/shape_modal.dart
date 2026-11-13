@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
 import 'package:saber/data/extensions/axis_extensions.dart';
