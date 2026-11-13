@@ -151,6 +151,7 @@ class _RecentPageState extends State<RecentPage> {
                 crossAxisCount: crossAxisCount,
                 files: [for (final filePath in filePaths) filePath],
                 selectedFiles: selectedFiles,
+                showFolders: stows.homeLayout.value == .list, // Fork
               ),
             ),
           ],

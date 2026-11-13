@@ -9,6 +9,7 @@ import 'package:saber/components/home/delete_note_button.dart';
 import 'package:saber/components/home/export_note_button.dart';
 import 'package:saber/components/home/grid_folders.dart';
 import 'package:saber/components/home/home_layout_button.dart';
+import 'package:saber/components/home/list_folders.dart';
 import 'package:saber/components/home/masonry_files.dart';
 import 'package:saber/components/home/move_folder_dialog.dart';
 import 'package:saber/components/home/move_note_button.dart';
@@ -383,7 +384,7 @@ class _BrowsePageState extends State<BrowsePage> {
           for (final directoryPath in children?.directories ?? const [])
             directoryPath,
         ],
-      ),
+      ).orListLayout, // Fork: folder rows in the List layout.
       if (children == null) ...[
         // loading
       ] else if (children!.isEmpty) ...[

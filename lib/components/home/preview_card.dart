@@ -15,6 +15,8 @@ import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
 
+part 'list_note_row.dart'; // Fork: List home layout row.
+
 class PreviewCard extends StatefulWidget {
   new({
     required this.filePath,
@@ -115,6 +117,8 @@ class _PreviewCardState extends State<PreviewCard> {
     final borderWidth = MediaQuery.highContrastOf(context)
         ? kSaberBorderWidthAccessible
         : kSaberBorderWidthInaccessible;
+
+    if (stows.homeLayout.value == .list) return buildListRow(context); // Fork
 
     final Widget card = MouseRegion(
       cursor: SystemMouseCursors.click,
