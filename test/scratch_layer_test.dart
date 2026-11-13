@@ -220,5 +220,7 @@ void main() {
     await tester.tap(find.byTooltip('Clear scratch'));
     await tester.pump();
     expect(state.hasScratchStrokes, isFalse);
+    // clearing also leaves the layer, so notes go on the page again
+    expect(state.scratch.isOn, isFalse);
   });
 }

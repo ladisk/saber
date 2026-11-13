@@ -55,11 +55,13 @@ extension EditorScratch on EditorState {
     );
   }
 
-  /// Removes all scratch strokes on all pages.
+  /// Removes all scratch strokes on all pages and turns the layer off,
+  /// so the next strokes go on the note again.
   /// This can't be undone, and drawing them can't be redone afterwards.
   void clearScratch() {
     ScratchLayer.clear(coreInfo.pages);
     history.removeScratchHistory();
+    scratch.isOn = false;
     _setState();
   }
 
