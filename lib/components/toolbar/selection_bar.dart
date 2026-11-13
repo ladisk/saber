@@ -1,6 +1,7 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:saber/components/canvas/line_type.dart';
+import 'package:saber/components/canvas/pins/pin_button.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -13,6 +14,7 @@ class SelectionBar extends StatelessWidget {
   final ValueChanged<Axis> mirrorSelection;
   final ValueChanged<LineType> setLineType;
   final VoidCallback solveSelection;
+  final VoidCallback? pinSelection;
 
   const new({
     super.key,
@@ -23,6 +25,7 @@ class SelectionBar extends StatelessWidget {
     required this.mirrorSelection,
     required this.setLineType,
     required this.solveSelection,
+    this.pinSelection,
   });
 
   @override
@@ -115,6 +118,7 @@ class SelectionBar extends StatelessWidget {
           tooltip: 'Solve maths',
           icon: const Icon(Icons.functions),
         ),
+        if (pinSelection != null) PinButton(onPressed: pinSelection!),
         const SizedBox(width: 16),
         for (final lineType in LineType.values)
           IconButton(

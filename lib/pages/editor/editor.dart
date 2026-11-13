@@ -28,6 +28,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/ladisk_logo.dart';
 import 'package:saber/components/canvas/line_type.dart';
 import 'package:saber/components/canvas/page_fit.dart';
+import 'package:saber/components/canvas/pins/pin_layer.dart';
 import 'package:saber/components/canvas/quill_click_to_type.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/tool_palette.dart';
@@ -45,6 +46,7 @@ import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/editor/pin.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_export.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
@@ -73,6 +75,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 
 part 'editor_clipboard.dart';
 part 'editor_image_drop.dart';
+part 'editor_pins.dart';
 
 class const _PhotoInfo(final Uint8List bytes, final String extension);
 
@@ -2136,6 +2139,7 @@ class EditorState extends State<Editor> {
           builder: (context, visible, _) =>
               visible ? const LadiskLogo() : const SizedBox.shrink(),
         ),
+        _pinLayer(),
         if (!coreInfo.readOnly)
           Positioned.fill(
             child: ValueListenableBuilder(
@@ -2228,6 +2232,7 @@ class EditorState extends State<Editor> {
           },
           setSelectionLineType: setSelectionLineType,
           solveSelection: solveSelection,
+          pinSelection: _pinSelection,
           deleteSelection: deleteSelection,
           copySelection: copySelection,
           cutSelection: cutSelection,

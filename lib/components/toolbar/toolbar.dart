@@ -56,6 +56,7 @@ class Toolbar extends StatefulWidget {
     required this.cutSelection,
     required this.mirrorSelection,
     required this.solveSelection,
+    this.pinSelection,
     required this.setSelectionLineType,
     required this.exportAsSba,
     required this.exportAsPdf,
@@ -89,6 +90,7 @@ class Toolbar extends StatefulWidget {
   final VoidCallback cutSelection;
   final ValueChanged<Axis> mirrorSelection;
   final VoidCallback solveSelection;
+  final VoidCallback? pinSelection;
   final ValueChanged<LineType> setSelectionLineType;
 
   final Future Function(BuildContext)? exportAsSba;
@@ -299,6 +301,7 @@ class _ToolbarState extends State<Toolbar> {
                 cutSelection: widget.cutSelection,
                 mirrorSelection: widget.mirrorSelection,
                 solveSelection: widget.solveSelection,
+                pinSelection: widget.pinSelection,
                 setLineType: widget.setSelectionLineType,
               ),
             },

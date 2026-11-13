@@ -13,6 +13,7 @@ import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/editor/pin.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
@@ -74,6 +75,9 @@ class EditorCoreInfo {
 
   /// Stores the current page index so that it can be restored when the file is reloaded.
   int? initialPageIndex;
+
+  /// LADISK fork: floating views of page areas, see [NotePin].
+  List<NotePin> ladiskPins = [];
 
   static final placeholder =
       EditorCoreInfo._(
@@ -203,7 +207,8 @@ class EditorCoreInfo {
             : null,
         onlyFirstPage: onlyFirstPage,
       )
-      .._sortStrokes();
+      .._sortStrokes()
+      ..loadLadiskPins(json[NotePin.jsonKey]);
   }
 
   /// Old json format is just a list of strokes
@@ -481,6 +486,7 @@ class EditorCoreInfo {
       'lt': lineThickness,
       'z': pages.map((EditorPage page) => page.toJson(assets)).toList(),
       'c': initialPageIndex,
+      ...ladiskPinsToJson(),
     };
 
     return (json, assets);

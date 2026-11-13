@@ -98,3 +98,14 @@ class const HistoricLineTypeChange({
     ),
   );
 }
+
+/// Never in the history, so the note counts as unsaved while
+/// [EditorHistory._lastSaved] is this.
+const _unsavedMarker = HistoricLineTypeChange(lineTypeChanges: {});
+
+extension EditorHistoryFork on EditorHistory {
+  /// Marks the note as changed without adding to the undo history,
+  /// for changes that can't be undone, like moving a pin.
+  /// The next save marks it as saved again.
+  void markUnsaved() => _lastSaved = _unsavedMarker;
+}
