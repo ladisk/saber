@@ -33,7 +33,7 @@ import workmanager_apple
   }
 }
 
-/// Forwards Apple Pencil double taps to Dart.
+/// Forwards Apple Pencil double taps and squeezes to Dart.
 ///
 /// Dart calls `attach` once it wants to receive taps,
 /// and is then sent `doubleTap` with either `ignore` or `toggle`,
@@ -75,6 +75,17 @@ class PencilInteractionHandler: NSObject, UIPencilInteractionDelegate {
 
   func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
     sendDoubleTap()
+  }
+
+  /// A squeeze (Apple Pencil Pro) does the same as a double tap,
+  /// once it is released.
+  @available(iOS 17.5, *)
+  func pencilInteraction(
+    _ interaction: UIPencilInteraction, didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze
+  ) {
+    guard squeeze.phase == .ended else { return }
+    let ignore = UIPencilInteraction.preferredSqueezeAction == .ignore
+    channel.invokeMethod("doubleTap", arguments: ignore ? "ignore" : "toggle")
   }
 
   private func sendDoubleTap() {

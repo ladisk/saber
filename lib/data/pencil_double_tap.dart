@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 
 /// Notifies listeners when the user double-taps the side of
-/// an Apple Pencil (2nd generation or Pro) on iPadOS.
+/// an Apple Pencil (2nd generation or Pro) on iPadOS,
+/// or squeezes an Apple Pencil Pro.
 ///
 /// Taps are ignored if the user has turned off the double-tap action
 /// in the iPadOS Apple Pencil settings.
