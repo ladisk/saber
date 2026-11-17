@@ -6,12 +6,21 @@ name: Fork release
 # Run it from the Actions tab, or with:
 #   gh workflow run fork-release.yml -R ladisk/saber
 #
+# To build a branch for testing without publishing a release:
+#   gh workflow run fork-release.yml -R ladisk/saber --ref <branch> -f publish=false
+# The builds are then only in the run's artifacts.
+#
 # Manual-only on purpose: pushing a tag would also start the
 # upstream release workflows, which need secrets this fork lacks.
 # A release created with GITHUB_TOKEN does not trigger them.
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a GitHub release (off = build only, for testing)
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -189,6 +198,7 @@ jobs:
 
   release:
     name: Publish release
+    if: inputs.publish
     needs: [version, build-ios, build-linux]
     runs-on: ubuntu-latest
     permissions:
